@@ -41,4 +41,20 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function datapasien()
+{
+    return $this->hasOne(Datapasien::class, 'user_id');
+}
+
+protected static function booted()
+{
+    static::updated(function ($user) {
+        if ($user->isDirty('no_telepon')) {
+            Datapasien::where('user_id', $user->id)
+                ->update(['no_telp' => $user->no_telepon]);
+        }
+    });
+}
+
 }

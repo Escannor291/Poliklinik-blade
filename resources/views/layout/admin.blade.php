@@ -22,6 +22,10 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- jQuery (if not already included) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 
 <body id="page-top">
@@ -54,8 +58,8 @@
                 <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Custom Data Master:</h6>
-                        <a class="collapse-item" href="">Data User</a>
-                        <a class="collapse-item" href="">Data Pasien</a>
+                        <a class="collapse-item" href="{{ route('user.index')}}">Data User</a>
+                        <a class="collapse-item" href="{{ route('pasien.index')}}">Data Pasien</a>
                         <a class="collapse-item" href="{{ route('poliklinik.index') }}">Data Poliklinik</a>
                         <a class="collapse-item" href="{{ route('dokter.index') }}">Data Dokter</a>
                         <a class="collapse-item" href="{{ route('jadwalpoliklinik.index') }}">Data Jadwal Poliklinik</a>
@@ -163,6 +167,7 @@
     <script src="{{ asset('template/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('template/vendor/jquery-easing/jquery.easing.min.js') }}"></script>
     <script src="{{ asset('template/js/sb-admin-2.min.js') }}"></script>
+    @stack('scripts')
 </body>
 
 </html>

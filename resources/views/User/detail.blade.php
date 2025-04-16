@@ -1,4 +1,4 @@
-@extends(auth()->user()->role === 'admin' ? 'layout.admin' : (auth()->user()->role === 'petugas' ? 'layout.petugas' : 'layout.pasien'))
+@extends(auth()->user()->roles === 'admin' ? 'layout.admin' : (auth()->user()->roles === 'petugas' ? 'layout.petugas' : 'layout.pasien'))
 
 @section('title', 'Detail Data Diri')
 
@@ -18,8 +18,8 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4 text-center mb-4">
-                            @if(auth()->user()->photo)
-                                <img src="{{ asset('storage/' . auth()->user()->photo) }}" class="img-profile rounded-circle" style="width: 200px; height: 200px; object-fit: cover;">
+                            @if(auth()->user()->foto_user)
+                                <img src="{{ asset('storage/foto_user/' . auth()->user()->foto_user) }}" class="img-profile rounded-circle" style="width: 200px; height: 200px; object-fit: cover;">
                             @else
                                 <img src="{{ asset('template/img/undraw_profile.svg') }}" class="img-profile rounded-circle" style="width: 200px; height: 200px; object-fit: cover;">
                             @endif
@@ -29,19 +29,19 @@
                                 <table class="table table-bordered" width="100%" cellspacing="0">
                                     <tr>
                                         <th width="30%">Nama User</th>
-                                        <td>{{ auth()->user()->name }}</td>
+                                        <td>{{ auth()->user()->nama_user }}</td>
                                     </tr>
                                     <tr>
                                         <th>Email/Username</th>
-                                        <td>{{ auth()->user()->email }}</td>
+                                        <td>{{ auth()->user()->username }}</td>
                                     </tr>
                                     <tr>
                                         <th>No Telepon</th>
-                                        <td>{{ auth()->user()->phone ?? '-' }}</td>
+                                        <td>{{ auth()->user()->no_telepon ?? '-' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Role</th>
-                                        <td>{{ ucfirst(auth()->user()->role) }}</td>
+                                        <td>{{ ucfirst(auth()->user()->roles) }}</td>
                                     </tr>
                                 </table>
                             </div>

@@ -73,8 +73,8 @@
 </script>
 @endsection
 
+@include('sweetalert::alert')
+
 @push('scripts')
 <script src="{{ asset('js/sweetalert.js') }}"></script>
 @endpush
-
-@include('sweetalert::alert')

@@ -48,8 +48,7 @@ class LoginController extends Controller
         }
     }
 
-
-     public function register(Request $request)
+    public function register(Request $request)
     {
         // Log incoming request data for debugging
         Log::info('Register attempt with data:', $request->except(['password', 'password_confirmation']));

@@ -49,7 +49,7 @@
             <li class="nav-item"><a class="nav-link" href=""><i class="fas fa-fw fa-calendar-plus"></i><span>Pendaftaran</span></a></li>
             <li class="nav-item"><a class="nav-link" href=""><i class="fas fa-fw fa-table"></i><span>Laporan Pendaftaran</span></a></li>
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('user.profile') }}">
+                <a class="nav-link" href="{{ Auth::user()->pasien ? route('pasien.show', Auth::user()->pasien->id) : route('user.profile') }}">
                     <i class="fas fa-fw fa-user"></i><span>Data Diri</span>
                 </a>
             </li>
@@ -102,7 +102,11 @@
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <span class="mr-2 d-none d-lg-inline text-gray-600 small">Admin</span>
-                                <img class="img-profile rounded-circle" src="" alt="">
+                                @if(isset(Auth::user()->foto_user) && Auth::user()->foto_user)
+                                    <img class="img-profile rounded-circle" src="{{ asset('storage/foto_user/' . Auth::user()->foto_user) }}" alt="Admin Photo">
+                                @else
+                                    <img class="img-profile rounded-circle" src="{{ asset('template/img/undraw_profile.svg') }}" alt="Default Admin Photo">
+                                @endif
                             </a>
 
                             <!-- Dropdown - User Information -->

@@ -88,7 +88,7 @@
     
     <!-- Nav Item - Data Diri -->
     <li class="nav-item">
-    <a class="nav-link" href="{{ route('user.profile') }}">
+    <a class="nav-link" href="{{ Auth::user()->pasien ? route('pasien.show', Auth::user()->pasien->id) : route('user.profile') }}">
     <i class="fas fa-fw fa-solid fa-user"></i>
     <span>Data Diri</span></a>
     </li>

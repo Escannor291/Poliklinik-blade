@@ -18,10 +18,14 @@
             </a>
         @endif
         
-        @if (Auth::user()->roles == 'pasien')
-            <a href="{{ route('pasien.edit', $dataPasien->id) }}" class="btn btn-success btn-sm">
+        @if (isset($dataPasien) && $dataPasien)
+            <a href="{{ route('pasien.edit', $dataPasien->id) }}" class="btn btn-primary">
                 <i class="fas fa-edit"></i> Edit/Lengkapi Data
             </a>
+        @else
+            <div class="alert alert-warning">
+                Data pasien tidak tersedia. Silahkan hubungi administrator.
+            </div>
         @endif
     </div>
     
@@ -139,77 +143,80 @@
     </div>
 </div>
 
-<!-- Modal for Scan KTP -->
-<div class="modal fade" id="modalScanKTP" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Scan KTP</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <img src="{{ asset('storage/' . $dataPasien->scan_ktp) }}" class="img-fluid mb-3">
-                <a href="{{ asset('storage/' . $dataPasien->scan_ktp) }}" class="btn btn-primary" download>Unduh</a>
+<!-- Only include modals if patient data exists -->
+@if (isset($dataPasien) && $dataPasien)
+    <!-- Modal for Scan KTP -->
+    <div class="modal fade" id="modalScanKTP" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Scan KTP</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="{{ asset('storage/' . $dataPasien->scan_ktp) }}" class="img-fluid mb-3">
+                    <a href="{{ asset('storage/' . $dataPasien->scan_ktp) }}" class="btn btn-primary" download>Unduh</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal for Scan Kartu Berobat -->
-<div class="modal fade" id="modalScanKartuBerobat" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Scan Kartu Berobat</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <img src="{{ asset('storage/' . $dataPasien->scan_kberobat) }}" class="img-fluid mb-3">
-                <a href="{{ asset('storage/' . $dataPasien->scan_kberobat) }}" class="btn btn-primary" download>Unduh</a>
+    <!-- Modal for Scan Kartu Berobat -->
+    <div class="modal fade" id="modalScanKartuBerobat" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Scan Kartu Berobat</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="{{ asset('storage/' . $dataPasien->scan_kberobat) }}" class="img-fluid mb-3">
+                    <a href="{{ asset('storage/' . $dataPasien->scan_kberobat) }}" class="btn btn-primary" download>Unduh</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal for Scan BPJS -->
-<div class="modal fade" id="modalScanBPJS" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Scan BPJS</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <img src="{{ asset('storage/' . $dataPasien->scan_kbpjs) }}" class="img-fluid mb-3">
-                <a href="{{ asset('storage/' . $dataPasien->scan_kbpjs) }}" class="btn btn-primary" download>Unduh</a>
+    <!-- Modal for Scan BPJS -->
+    <div class="modal fade" id="modalScanBPJS" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Scan BPJS</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="{{ asset('storage/' . $dataPasien->scan_kbpjs) }}" class="img-fluid mb-3">
+                    <a href="{{ asset('storage/' . $dataPasien->scan_kbpjs) }}" class="btn btn-primary" download>Unduh</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal for Scan Asuransi -->
-<div class="modal fade" id="modalScanAsuransi" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Scan Asuransi</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <img src="{{ asset('storage/' . $dataPasien->scan_kasuransi) }}" class="img-fluid mb-3">
-                <a href="{{ asset('storage/' . $dataPasien->scan_kasuransi) }}" class="btn btn-primary" download>Unduh</a>
+    <!-- Modal for Scan Asuransi -->
+    <div class="modal fade" id="modalScanAsuransi" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Scan Asuransi</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="{{ asset('storage/' . $dataPasien->scan_kasuransi) }}" class="img-fluid mb-3">
+                    <a href="{{ asset('storage/' . $dataPasien->scan_kasuransi) }}" class="btn btn-primary" download>Unduh</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
+@endif
 @endsection
 
 @include('sweetalert::alert')

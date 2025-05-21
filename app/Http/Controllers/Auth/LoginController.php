@@ -5,9 +5,25 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use App\Models\Datapasien;
 
 class LoginController extends Controller
 {
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('guest')->except('logout');
+    }
+    
     public function username()
     {
         return 'username';
@@ -46,9 +62,51 @@ class LoginController extends Controller
         } elseif ($user->roles == 'pasien') {
             return redirect('/dashboard-pasien');
         }
+        
+        return redirect('/');
     }
 
+    /**
+     * Register a new user account.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function register(Request $request)
+    {
+        $this->validateRegister($request);
+
+        $user = new \App\Models\User();
+        $user->nama_user = $request->nama_user;
+        $user->username = $request->username;
+        $user->password = Hash::make($request->password);
+        $user->no_telepon = $request->no_telepon;
+        $user->roles = 'pasien';
+        $user->save();
+
+        // Create initial patient data
+        $datapasien = new \App\Models\Datapasien();
+        $datapasien->user_id = $user->id;
+        $datapasien->nama_pasien = $user->nama_user;
+        $datapasien->email = $user->username;
+        $datapasien->no_telp = $user->no_telepon;
+        $datapasien->save();
+        
+        // Log the user in automatically
+        Auth::login($user);
+
+        return redirect()->route('dashboard-pasien')->with('success', 'Registrasi berhasil! Selamat datang di Sistem Pendaftaran RS Fachri.');
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect()->route('login');
+    }
+
+    private function validateRegister(Request $request)
     {
         // Log incoming request data for debugging
         Log::info('Register attempt with data:', $request->except(['password', 'password_confirmation']));
@@ -82,47 +140,5 @@ class LoginController extends Controller
                 ->withErrors($validator)
                 ->withInput();
         }
-
-        try {
-            DB::beginTransaction();
-            
-            // Create user
-            $user = User::create([
-                'nama_user' => $request->nama_user,
-                'username' => $request->username,
-                'password' => Hash::make($request->password),
-                'no_telepon' => $request->no_telepon,
-                'roles' => 'pasien', // Default role is pasien
-            ]);
-
-            DB::commit();
-            
-            Log::info('User successfully created with ID: ' . $user->id);
-
-            // Redirect to login with success message
-            return redirect()->route('login')
-                ->with('success', 'Registrasi berhasil! Silakan login.');
-                
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            // Log the exception for debugging
-            Log::error('Error during registration:', [
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan pada sistem: ' . $e->getMessage())
-                ->withInput();
-        }
-    }
-
-    public function logout(Request $request)
-    {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect()->route('login');
     }
 }

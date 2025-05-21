@@ -28,7 +28,7 @@
                                 <span class="text">Lihat Data Diri</span>
                             </a>
                         @endif
-                        <a href="#" class="btn btn-success btn-icon-split">
+                        <a href="{{ route('pendaftaran.pasien') }}" class="btn btn-success btn-icon-split">
                             <span class="icon text-white-50">
                                 <i class="fas fa-calendar-plus"></i>
                             </span>
@@ -220,10 +220,10 @@
                                 <div class="card-body text-center">
                                     <i class="fas fa-notes-medical fa-3x mb-3 text-gray-500"></i>
                                     <h6>BPJS</h6>
-                                    @if(isset($dataPasien->scan_kbpjs) && $dataPasien->scan_kbpjs)
+                                    @if(isset($dataPasien->no_bpjs) && isset($dataPasien->scan_bpjs) && $dataPasien->no_bpjs && $dataPasien->scan_bpjs)
                                         <span class="badge badge-success">Tersedia</span>
                                     @else
-                                        <span class="badge badge-danger">Belum Upload</span>
+                                        <span class="badge badge-danger">Belum Lengkap</span>
                                     @endif
                                 </div>
                             </div>
@@ -233,7 +233,7 @@
                                 <div class="card-body text-center">
                                     <i class="fas fa-file-medical fa-3x mb-3 text-gray-500"></i>
                                     <h6>Asuransi</h6>
-                                    @if(isset($dataPasien->scan_kasuransi) && $dataPasien->scan_kasuransi)
+                                    @if(isset($dataPasien->scan_asuransi) && $dataPasien->scan_asuransi)
                                         <span class="badge badge-success">Tersedia</span>
                                     @else
                                         <span class="badge badge-danger">Belum Upload</span>

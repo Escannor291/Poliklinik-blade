@@ -3,57 +3,64 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Datapasien;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Pendaftaran;
+use Illuminate\Support\Facades\DB;
 
 class PasienController extends Controller
 {
-    /**
-     * Constructor to apply middleware
-     */
     public function __construct()
     {
-        // Apply auth middleware to all methods
         $this->middleware('auth');
+        $this->middleware('role:pasien');
     }
-    
-    /**
-     * Display the patient dashboard.
-     */
+
     public function index()
     {
         $user = Auth::user();
         
-        // Check if user has the patient role
-        if ($user->roles !== 'pasien') {
-            return redirect()->route('login')->with('error', 'Anda tidak memiliki akses ke halaman ini.');
+        // Get dataPasien model for this user
+        $dataPasien = \App\Models\Datapasien::where('user_id', $user->id)->first();
+        
+        // Get count of active appointments
+        $janji_aktif = 0;
+        $riwayat_kunjungan = 0;
+        
+        // Check if user has datapasien relationship
+        if ($dataPasien) {
+            try {
+                // Count active appointments (future appointments)
+                $janji_aktif = DB::table('pendaftaran')
+                    ->join('jadwalpoliklinik', 'pendaftaran.jadwalpoliklinik_id', '=', 'jadwalpoliklinik.id')
+                    ->where('pendaftaran.id_pasien', $dataPasien->id)
+                    ->whereDate('jadwalpoliklinik.tanggal_praktek', '>=', now())
+                    ->count();
+                
+                // Count past visits
+                $riwayat_kunjungan = DB::table('pendaftaran')
+                    ->join('jadwalpoliklinik', 'pendaftaran.jadwalpoliklinik_id', '=', 'jadwalpoliklinik.id')
+                    ->where('pendaftaran.id_pasien', $dataPasien->id)
+                    ->whereDate('jadwalpoliklinik.tanggal_praktek', '<', now())
+                    ->count();
+            } catch (\Exception $e) {
+                // Log the error but continue with default values
+                \Illuminate\Support\Facades\Log::error('Error fetching pendaftaran data: ' . $e->getMessage());
+            }
         }
         
-        // Get patient data for the logged-in user
-        $dataPasien = Datapasien::where('user_id', $user->id)->first();
-        
-        // If patient data doesn't exist, create a basic record
-        if (!$dataPasien) {
-            $dataPasien = new Datapasien([
-                'nama_pasien' => $user->nama_user,
-                'email' => $user->username,
-                'no_telp' => $user->no_telepon,
-                'user_id' => $user->id,
-            ]);
-            $dataPasien->save();
+        // If dataPasien exists, calculate data completeness percentage
+        $completionPercentage = 0;
+        if ($dataPasien) {
+            $fields = ['nik', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'alamat', 'scan_ktp'];
+            $completedFields = 0;
+            foreach ($fields as $field) {
+                if (!empty($dataPasien->$field)) $completedFields++;
+            }
+            $completionPercentage = round(($completedFields / count($fields)) * 100);
         }
         
-        // Check if scan files exist in the appropriate directory
-        $dataPasien->scan_ktp = $dataPasien->scan_ktp && file_exists(public_path('storage/' . $dataPasien->scan_ktp))
-            ? $dataPasien->scan_ktp : null;
-        $dataPasien->scan_kberobat = $dataPasien->scan_kberobat && file_exists(public_path('storage/' . $dataPasien->scan_kberobat))
-            ? $dataPasien->scan_kberobat : null;
-        $dataPasien->scan_kbpjs = $dataPasien->scan_kbpjs && file_exists(public_path('storage/' . $dataPasien->scan_kbpjs))
-            ? $dataPasien->scan_kbpjs : null;
-        $dataPasien->scan_kasuransi = $dataPasien->scan_kasuransi && file_exists(public_path('storage/' . $dataPasien->scan_kasuransi))
-            ? $dataPasien->scan_kasuransi : null;
-            
-        return view('dashboard-pasien', compact('dataPasien', 'user'));
+        // Return view with data
+        return view('dashboard-pasien', compact('dataPasien', 'janji_aktif', 'riwayat_kunjungan', 'completionPercentage'));
     }
 
     /**
@@ -85,7 +92,20 @@ class PasienController extends Controller
      */
     public function show($id)
     {
-        //
+        try {
+            $dataPasien = Datapasien::findOrFail($id);
+            
+            // Determine which layout to use based on user role
+            if (Auth::user()->roles === 'pasien') {
+                return view('pasien.show', compact('dataPasien'));
+            } else {
+                // Admin or petugas is viewing - use the correct admin view
+                return view('datapasien.show', compact('dataPasien'));
+            }
+        } catch (\Exception $e) {
+            $redirect = Auth::user()->roles === 'pasien' ? 'dashboard' : 'pasien.index';
+            return redirect()->route($redirect)->with('error', 'Data pasien tidak ditemukan.');
+        }
     }
 
     /**

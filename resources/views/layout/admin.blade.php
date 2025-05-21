@@ -46,8 +46,8 @@
 
             <!-- Nav Items -->
             <li class="nav-item"><a class="nav-link" href="{{ route('dashboard-admin') }}"><i class="fas fa-fw fa-tachometer-alt"></i><span>Dashboard</span></a></li>
-            <li class="nav-item"><a class="nav-link" href=""><i class="fas fa-fw fa-calendar-plus"></i><span>Pendaftaran</span></a></li>
-            <li class="nav-item"><a class="nav-link" href=""><i class="fas fa-fw fa-table"></i><span>Laporan Pendaftaran</span></a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ route('pendaftaran.index') }}"><i class="fas fa-fw fa-calendar-plus"></i><span>Pendaftaran</span></a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ route('laporan_pendaftaran.index') }}"><i class="fas fa-fw fa-table"></i><span>Laporan Pendaftaran</span></a></li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ Auth::user()->pasien ? route('pasien.show', Auth::user()->pasien->id) : route('user.profile') }}">
                     <i class="fas fa-fw fa-user"></i><span>Data Diri</span>

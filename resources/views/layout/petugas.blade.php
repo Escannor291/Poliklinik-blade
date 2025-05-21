@@ -74,14 +74,14 @@
 
     <!-- Nav Item - Pendaftaran -->
     <li class="nav-item">
-    <a class="nav-link" href="">
+    <a class="nav-link" href="{{ route('pendaftaran.index') }}">
     <i class="fas fa-fw fa-solid fa-calendar-plus"></i>
     <span>Pendaftaran</span></a>
     </li>
 
     <!-- Nav Item - Laporan Pendaftaran -->
     <li class="nav-item">
-    <a class="nav-link" href="">
+    <a class="nav-link" href="{{ route('laporan_pendaftaran.index') }}">
     <i class="fas fa-fw fa-solid fa-table"></i>
     <span>Laporan Pendaftaran</span></a>
     </li>

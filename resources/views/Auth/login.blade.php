@@ -113,6 +113,12 @@
                 </div>
             @endif
 
+            @if(session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('login') }}">
                 @csrf
                 <div class="form-group">
@@ -129,7 +135,7 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary">Login</button>
-                <a href="#" class="btn btn-info">Registrasi</a>
+                <a href="{{ route('register') }}" class="btn btn-info">Registrasi</a>
             </form>
         </div>
     </div>

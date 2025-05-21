@@ -1,316 +1,297 @@
-@extends(Auth::user()->roles == 'admin' ? 'layout.admin' : 
-       (Auth::user()->roles == 'pasien' ? 'layout.pasien' : 'layout.petugas'))
+@extends(Auth::user()->roles == 'admin' ? 'layout.admin' : (Auth::user()->roles == 'petugas' ? 'layout.petugas' : 'layout.pasien'))
 
 @section('title', 'Pendaftaran Poliklinik')
 
 @section('content')
-<!-- Page Heading -->
-<h1 class="h3 mb-2 text-gray-800">Pendaftaran Rawat Jalan</h1>
-
-@if(session('success'))
-<script>
-    Swal.fire({
-        icon: 'success',
-        title: 'Berhasil',
-        text: '{{ session('success') }}',
-        timer: 2000,
-        showConfirmButton: false
-    });
-</script>
-@endif
-
-<!-- Data Jadwal Hari Ini -->
-<div class="card shadow mb-4">
-    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Hari Ini, {{ $today->format('d/M/Y') }}</h6>
-        @if($jadwalHariIni->isEmpty())
-        <span class="badge badge-warning">Tidak ada jadwal tersedia</span>
-        @else
-        <span class="badge badge-success">{{ $jadwalHariIni->count() }} poliklinik tersedia</span>
-        @endif
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-2 text-gray-800">Pendaftaran Rawat Jalan</h1>
     </div>
-    <div class="card-body">
-        @if($jadwalHariIni->isEmpty())
-        <div class="text-center py-4">
-            <i class="fas fa-calendar-times fa-4x text-gray-300 mb-3"></i>
-            <p class="text-muted">Tidak ada jadwal praktek dokter untuk hari ini</p>
-            @if(!$jadwalBesok->isEmpty() || !$jadwalMendatang->isEmpty())
-            <p>Silakan lihat jadwal di hari berikutnya.</p>
-            @else
-            <p>Silakan kembali lagi di lain waktu.</p>
-            @endif
-        </div>
-        @else
-        <div class="row">
-            @foreach ($jadwalHariIni as $item)
-            <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
-                <div class="card h-100">
-                    <img src="{{ asset('storage/foto_dokter/' . $item->dokter->foto_dokter) }}" class="card-img-top" 
-                         alt="Foto Dokter" style="height: 200px; object-fit: cover;">
-                    <div class="card-body">
-                        <h5 class="card-title" style="font-size: 1rem; font-weight: bold;">{{ $item->dokter->nama_dokter }}</h5>
-                        <p class="card-text" style="font-size: 0.875rem;">
-                            <strong>Poliklinik:</strong> {{ $item->dokter->poliklinik->nama_poliklinik }}<br>
-                            <strong>Jam:</strong> {{ \Carbon\Carbon::parse($item->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($item->jam_selesai)->format('H:i') }}<br>
-                            <strong>Kuota Tersisa:</strong> {{ $item->jumlah }}<br>
-                            
-                            <!-- Fixed Rating display -->
-                            <strong>Rating:</strong>
-                            <div class="ratings">
-                                @if(isset($dokterRatings[$item->dokter_id]))
-                                    @php 
-                                        $rating = $dokterRatings[$item->dokter_id]; 
-                                        $fullStars = floor($rating);
-                                        $halfStar = $rating - $fullStars > 0.3 ? 1 : 0;
-                                        $emptyStars = 5 - $fullStars - $halfStar;
-                                    @endphp
-                                    
-                                    @for($i = 0; $i < $fullStars; $i++)
-                                        <i class="fas fa-star text-warning"></i>
-                                    @endfor
-                                    
-                                    @if($halfStar)
-                                        <i class="fas fa-star-half-alt text-warning"></i>
-                                    @endif
-                                    
-                                    @for($i = 0; $i < $emptyStars; $i++)
-                                        <i class="far fa-star text-warning"></i>
-                                    @endfor
-                                    
-                                    <span class="ml-1">({{ number_format($rating, 1) }})</span>
-                                @else
-                                    <span class="text-muted">Belum ada rating</span>
-                                @endif
-                            </div>
-                        </p>
-                        <button class="btn btn-success btn-sm mt-2" data-toggle="modal" data-target="#pendaftaranModal" 
-                                data-id="{{ $item->id }}">Daftar</button>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-            @include('sweetalert::alert')
-        </div>
-        @endif
-    </div>
-</div>
-
-<!-- Jadwal Besok - Only show if there are appointments available -->
-@if(!$jadwalBesok->isEmpty())
-<div class="card shadow mb-4">
-    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Besok, {{ $tomorrow->format('d/M/Y') }}</h6>
-        <span class="badge badge-info">{{ $jadwalBesok->count() }} poliklinik tersedia</span>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            @foreach ($jadwalBesok as $item)
-            <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
-                <div class="card h-100">
-                    <img src="{{ asset('storage/foto_dokter/' . $item->dokter->foto_dokter) }}" class="card-img-top" 
-                         alt="Foto Dokter" style="height: 200px; object-fit: cover;">
-                    <div class="card-body">
-                        <h5 class="card-title" style="font-size: 1rem; font-weight: bold;">{{ $item->dokter->nama_dokter }}</h5>
-                        <p class="card-text" style="font-size: 0.875rem;">
-                            <strong>Poliklinik:</strong> {{ $item->dokter->poliklinik->nama_poliklinik }}<br>
-                            <strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($item->tanggal_praktek)->format('d/m/Y') }}<br>
-                            <strong>Jam:</strong> {{ \Carbon\Carbon::parse($item->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($item->jam_selesai)->format('H:i') }}<br>
-                            <strong>Kuota Tersisa:</strong> {{ $item->jumlah }}<br>
-                            
-                            <!-- Fixed Rating display -->
-                            <strong>Rating:</strong>
-                            <div class="ratings">
-                                @if(isset($dokterRatings[$item->dokter_id]))
-                                    @php 
-                                        $rating = $dokterRatings[$item->dokter_id]; 
-                                        $fullStars = floor($rating);
-                                        $halfStar = $rating - $fullStars > 0.3 ? 1 : 0;
-                                        $emptyStars = 5 - $fullStars - $halfStar;
-                                    @endphp
-                                    
-                                    @for($i = 0; $i < $fullStars; $i++)
-                                        <i class="fas fa-star text-warning"></i>
-                                    @endfor
-                                    
-                                    @if($halfStar)
-                                        <i class="fas fa-star-half-alt text-warning"></i>
-                                    @endif
-                                    
-                                    @for($i = 0; $i < $emptyStars; $i++)
-                                        <i class="far fa-star text-warning"></i>
-                                    @endfor
-                                    
-                                    <span class="ml-1">({{ number_format($rating, 1) }})</span>
-                                @else
-                                    <span class="text-muted">Belum ada rating</span>
-                                @endif
-                            </div>
-                        </p>
-                        <button class="btn btn-success btn-sm mt-2" data-toggle="modal" data-target="#pendaftaranModal" 
-                                data-id="{{ $item->id }}">Daftar</button>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-</div>
-@endif
-
-<!-- Jadwal Mendatang (Lebih Dari 1 Hari) - Group by Date -->
-@if(isset($jadwalMendatang) && !$jadwalMendatang->isEmpty())
-    @php
-        $groupedJadwal = $jadwalMendatang->groupBy(function($item) {
-            return \Carbon\Carbon::parse($item->tanggal_praktek)->format('Y-m-d');
-        });
-    @endphp
     
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Jadwal Mendatang</h6>
-            <span class="badge badge-primary">{{ $jadwalMendatang->count() }} jadwal tersedia</span>
-        </div>
-        <div class="card-body">
-            <div class="accordion" id="accordionJadwal">
-                @foreach($groupedJadwal as $date => $jadwalItems)
-                    @php
-                        $dateFormat = \Carbon\Carbon::parse($date)->format('d/M/Y');
-                        $dayName = \Carbon\Carbon::parse($date)->locale('id')->dayName;
-                        $headingId = 'heading' . str_replace(['-', '/'], '', $date);
-                        $collapseId = 'collapse' . str_replace(['-', '/'], '', $date);
-                    @endphp
-                    
-                    <div class="card mb-1">
-                        <div class="card-header py-2" id="{{ $headingId }}">
-                            <h2 class="mb-0">
-                                <button class="btn btn-link btn-block text-left collapsed" type="button" 
-                                        data-toggle="collapse" data-target="#{{ $collapseId }}" 
-                                        aria-expanded="false" aria-controls="{{ $collapseId }}">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-calendar-day mr-2"></i> {{ $dayName }}, {{ $dateFormat }}</span>
-                                        <span class="badge badge-info">{{ $jadwalItems->count() }} jadwal</span>
-                                    </div>
-                                </button>
-                            </h2>
-                        </div>
+    <p class="mb-4">Daftar Jadwal Dokter</p>
 
-                        <div id="{{ $collapseId }}" class="collapse" aria-labelledby="{{ $headingId }}" data-parent="#accordionJadwal">
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    @endif
+
+    @if(session('error') || session('msg'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ session('error') ?? session('msg') }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    @endif
+
+    <!-- Alert if no jadwal is available -->
+    @if($jadwalHariIni->isEmpty() && $jadwalBesok->isEmpty() && $jadwalMendatang->isEmpty())
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle mr-1"></i> Tidak ada jadwal praktek yang tersedia saat ini.
+    </div>
+    @endif
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" id="jadwalTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="today-tab" data-toggle="tab" href="#hari-ini" role="tab" aria-controls="hari-ini" aria-selected="true">Hari Ini</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="tomorrow-tab" data-toggle="tab" href="#tomorrow" role="tab" aria-controls="tomorrow" aria-selected="false">Besok</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="future-tab" data-toggle="tab" href="#future" role="tab" aria-controls="future" aria-selected="false">Mendatang</a>
+        </li>
+    </ul>
+
+    <!-- Tab content -->
+    <div class="tab-content" id="jadwalTabContent">
+        <!-- Jadwal Hari Ini -->
+        <div class="tab-pane fade show active" id="hari-ini" role="tabpanel" aria-labelledby="hari-ini-tab">
+            <div class="row">
+                @if($jadwalHariIni->count() > 0)
+                    @foreach($jadwalHariIni as $jadwal)
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card border-left-primary shadow h-100">
+                            <div class="card-header py-2 d-flex flex-row align-items-center justify-content-between">
+                                <h6 class="m-0 font-weight-bold text-primary">{{ $jadwal->dokter->poliklinik->nama_poliklinik }}</h6>
+                                <span class="badge badge-primary">{{ \Carbon\Carbon::parse($jadwal->tanggal_praktek)->format('d M Y') }}</span>
+                            </div>
                             <div class="card-body">
-                                <div class="row">
-                                    @foreach ($jadwalItems as $item)
-                                    <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
-                                        <div class="card h-100">
-                                            <img src="{{ asset('storage/foto_dokter/' . $item->dokter->foto_dokter) }}" class="card-img-top" 
-                                                alt="Foto Dokter" style="height: 150px; object-fit: cover;">
-                                            <div class="card-body">
-                                                <h5 class="card-title" style="font-size: 1rem; font-weight: bold;">{{ $item->dokter->nama_dokter }}</h5>
-                                                <p class="card-text" style="font-size: 0.875rem;">
-                                                    <strong>Poliklinik:</strong> {{ $item->dokter->poliklinik->nama_poliklinik }}<br>
-                                                    <strong>Jam:</strong> {{ \Carbon\Carbon::parse($item->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($item->jam_selesai)->format('H:i') }}<br>
-                                                    <strong>Kuota Tersisa:</strong> {{ $item->jumlah }}
-                                                </p>
-                                                <button class="btn btn-success btn-sm mt-2" data-toggle="modal" data-target="#pendaftaranModal" 
-                                                        data-id="{{ $item->id }}">Daftar</button>
-                                            </div>
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col-auto mr-3">
+                                        @if($jadwal->dokter->foto)
+                                            <img src="{{ asset('storage/'.$jadwal->dokter->foto) }}" alt="Foto Dokter" class="img-profile rounded-circle" style="width: 60px; height: 60px;">
+                                        @else
+                                            <img src="{{ asset('template/img/doctor.jpg') }}" alt="Foto Dokter" class="img-profile rounded-circle" style="width: 60px; height: 60px;">
+                                        @endif
+                                    </div>
+                                    <div class="col">
+                                        <h5 class="font-weight-bold">{{ $jadwal->dokter->nama_dokter }}</h5>
+                                        
+                                        <div class="mb-1">
+                                            @php
+                                                $rating = isset($dokterRatings[$jadwal->dokter_id]) ? $dokterRatings[$jadwal->dokter_id] : 5;
+                                                $fullStars = floor($rating);
+                                                $halfStar = $rating - $fullStars >= 0.5;
+                                                $emptyStars = 5 - $fullStars - ($halfStar ? 1 : 0);
+                                            @endphp
+                                            
+                                            @for($i=0; $i < $fullStars; $i++)
+                                                <i class="fas fa-star text-warning"></i>
+                                            @endfor
+                                            
+                                            @if($halfStar)
+                                                <i class="fas fa-star-half-alt text-warning"></i>
+                                            @endif
+                                            
+                                            @for($i=0; $i < $emptyStars; $i++)
+                                                <i class="far fa-star text-warning"></i>
+                                            @endfor
                                         </div>
-                                    @endforeach
+                                        
+                                        <p class="mb-0"><i class="fas fa-clock mr-1"></i> {{ substr($jadwal->jam_mulai, 0, 5) }} - {{ substr($jadwal->jam_selesai, 0, 5) }}</p>
+                                        <p class="mb-0">
+                                            Kuota: 
+                                            @if(isset($jadwal->kuota))
+                                                <span class="font-weight-bold">{{ $jadwal->kuota }}/{{ $jadwal->jumlah }}</span>
+                                            @else
+                                                <span class="font-weight-bold">{{ $jadwal->jumlah }}/{{ $jadwal->jumlah }}</span>
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <a href="{{ route('pendaftaran.show', $jadwal->id) }}" class="btn btn-primary btn-block">
+                                        <i class="fas fa-clipboard-list fa-sm"></i> Daftar
+                                    </a>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    @endforeach
+                @else
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-1"></i> Tidak ada jadwal praktek tersedia untuk hari ini.
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Tambahkan debugging info jika dalam mode debug -->
+        @if(config('app.debug'))
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-danger">Debug Info (Hanya tampil di development)</h6>
+            </div>
+            <div class="card-body">
+                <p>Waktu sekarang: {{ Carbon\Carbon::now()->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') }}</p>
+                <p>Jumlah jadwal hari ini: {{ $jadwalHariIni->count() }}</p>
+                @foreach($jadwalHariIni as $jadwal)
+                    <div class="mb-2">
+                        <strong>ID: {{ $jadwal->id }}</strong> - 
+                        Dokter: {{ $jadwal->dokter->nama_dokter }} - 
+                        Jam: {{ $jadwal->jam_mulai }} - {{ $jadwal->jam_selesai }} - 
+                        Kuota: {{ $jadwal->kuota ?? $jadwal->jumlah }}/{{ $jadwal->jumlah }}
+                    </div>
                 @endforeach
             </div>
         </div>
-    </div>
-@endif
+        @endif
 
-<!-- If no schedules available at all, show a message -->
-@if($jadwalHariIni->isEmpty() && $jadwalBesok->isEmpty() && (isset($jadwalMendatang) && $jadwalMendatang->isEmpty()))
-<div class="alert alert-info text-center my-4">
-    <i class="fas fa-info-circle fa-lg mr-2"></i>
-    Tidak ada jadwal dokter tersedia untuk saat ini.
-    <br>Silakan cek kembali di lain waktu atau hubungi petugas rumah sakit untuk informasi lebih lanjut.
-    <br>
-    <a href="{{ route('dashboard-pasien') }}" class="btn btn-primary btn-sm mt-3">
-        <i class="fas fa-home fa-sm"></i> Kembali ke Dashboard
-    </a>
-</div>
-@endif
-
-<!-- Modal Pendaftaran -->
-<div class="modal fade" id="pendaftaranModal" tabindex="-1" role="dialog" aria-labelledby="pendaftaranModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="pendaftaranModalLabel">Form Pendaftaran Rawat Jalan</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+        <!-- Jadwal Besok -->
+        <div class="tab-pane fade" id="tomorrow" role="tabpanel" aria-labelledby="tomorrow-tab">
+            <div class="row mt-4">
+                @forelse($jadwalBesok as $jadwal)
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100">
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                            <h6 class="m-0 font-weight-bold text-warning">{{ $jadwal->dokter->poliklinik->nama_poliklinik }}</h6>
+                            <div class="badge badge-warning">Besok</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $jadwal->dokter->nama_dokter }}</div>
+                                    <div class="text-xs font-weight-bold text-warning mb-1">{{ $jadwal->dokter->spesialisasi }}</div>
+                                    
+                                    <!-- Rating Stars -->
+                                    <div class="mb-2">
+                                        @php
+                                            $rating = isset($dokterRatings[$jadwal->dokter_id]) ? $dokterRatings[$jadwal->dokter_id] : 5;
+                                            $fullStars = floor($rating);
+                                            $halfStar = $rating - $fullStars >= 0.5;
+                                        @endphp
+                                        
+                                        @for($i = 1; $i <= 5; $i++)
+                                            @if($i <= $fullStars)
+                                                <i class="fas fa-star text-warning"></i>
+                                            @elseif($i == $fullStars + 1 && $halfStar)
+                                                <i class="fas fa-star-half-alt text-warning"></i>
+                                            @else
+                                                <i class="far fa-star text-warning"></i>
+                                            @endif
+                                        @endfor
+                                    </div>
+                                    
+                                    <p class="mb-1"><i class="fas fa-clock text-gray-500 mr-1"></i> {{ substr($jadwal->jam_mulai, 0, 5) }} - {{ substr($jadwal->jam_selesai, 0, 5) }}</p>
+                                    <p><i class="fas fa-user-plus text-gray-500 mr-1"></i> Kuota: 
+                                        <span class="font-weight-bold">
+                                        @if(isset($jadwal->kuota))
+                                            {{ $jadwal->kuota }}
+                                        @else
+                                            {{ $jadwal->jumlah }}
+                                        @endif
+                                        /{{ $jadwal->jumlah }}
+                                        </span>
+                                    </p>
+                                    <a href="{{ route('pendaftaran.show', $jadwal->id) }}" class="btn btn-warning btn-block">
+                                        <i class="fas fa-notes-medical mr-1"></i> Daftar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @empty
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-4x text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">Tidak ada jadwal praktek tersedia untuk besok</p>
+                    </div>
+                </div>
+                @endforelse
             </div>
-            <div class="modal-body">
-                <form id="pendaftaranForm" action="{{ route('Pendaftaran.store') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <input type="hidden" name="jadwalpoliklinik_id" id="jadwalpoliklinik_id">
-                    
-                    @if (Auth::user()->roles == 'admin' || Auth::user()->roles == 'petugas')
-                    <div class="form-group">
-                        <label for="nama_pasien">Nama Pasien:</label>
-                        <input type="text" name="nama_pasien" id="nama_pasien" class="form-control" required>
+        </div>
+
+        <!-- Jadwal Mendatang -->
+        <div class="tab-pane fade" id="future" role="tabpanel" aria-labelledby="future-tab">
+            <div class="row mt-4">
+                @forelse($jadwalMendatang as $jadwal)
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100">
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                            <h6 class="m-0 font-weight-bold text-info">{{ $jadwal->dokter->poliklinik->nama_poliklinik }}</h6>
+                            <div class="badge badge-info">{{ \Carbon\Carbon::parse($jadwal->tanggal_praktek)->format('d/m/Y') }}</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $jadwal->dokter->nama_dokter }}</div>
+                                    <div class="text-xs font-weight-bold text-info mb-1">{{ $jadwal->dokter->spesialisasi }}</div>
+                                    
+                                    <!-- Rating Stars -->
+                                    <div class="mb-2">
+                                        @php
+                                            $rating = isset($dokterRatings[$jadwal->dokter_id]) ? $dokterRatings[$jadwal->dokter_id] : 5;
+                                            $fullStars = floor($rating);
+                                            $halfStar = $rating - $fullStars >= 0.5;
+                                        @endphp
+                                        
+                                        @for($i = 1; $i <= 5; $i++)
+                                            @if($i <= $fullStars)
+                                                <i class="fas fa-star text-warning"></i>
+                                            @elseif($i == $fullStars + 1 && $halfStar)
+                                                <i class="fas fa-star-half-alt text-warning"></i>
+                                            @else
+                                                <i class="far fa-star text-warning"></i>
+                                            @endif
+                                        @endfor
+                                    </div>
+                                    
+                                    <p class="mb-1"><i class="fas fa-clock text-gray-500 mr-1"></i> {{ substr($jadwal->jam_mulai, 0, 5) }} - {{ substr($jadwal->jam_selesai, 0, 5) }}</p>
+                                    <p><i class="fas fa-user-plus text-gray-500 mr-1"></i> Kuota: 
+                                        <span class="font-weight-bold">
+                                        @if(isset($jadwal->kuota))
+                                            {{ $jadwal->kuota }}
+                                        @else
+                                            {{ $jadwal->jumlah }}
+                                        @endif
+                                        /{{ $jadwal->jumlah }}
+                                        </span>
+                                    </p>
+                                    <a href="{{ route('pendaftaran.show', $jadwal->id) }}" class="btn btn-info btn-block">
+                                        <i class="fas fa-notes-medical mr-1"></i> Daftar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    @endif
-                    
-                    <div class="form-group">
-                        <label for="penjamin">Penjamin:</label>
-                        <select name="penjamin" id="penjamin" class="form-control" required onchange="toggleSuratRujukan()">
-                            <option value="">Pilih Penjamin</option>
-                            <option value="UMUM">UMUM</option>
-                            <option value="BPJS">BPJS</option>
-                            <option value="Asuransi">Asuransi</option>
-                        </select>
+                </div>
+                @empty
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-4x text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">Tidak ada jadwal praktek tersedia untuk masa mendatang</p>
                     </div>
-                    
-                    @if (Auth::user()->roles == 'pasien')
-                    <div class="form-group" id="scan_surat_rujukan_group" style="display: none;">
-                        <label for="scan_surat_rujukan">Scan Surat Rujukan:</label>
-                        <input type="file" name="scan_surat_rujukan" id="scan_surat_rujukan" class="form-control">
-                    </div>
-                    @endif
-                    
-                    <div class="form-group text-center">
-                        <button type="submit" class="btn btn-primary">Daftar</button>
-                    </div>
-                </form>
+                </div>
+                @endforelse
             </div>
         </div>
     </div>
 </div>
-
-<!-- Sertakan SweetAlert2 dan Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-    $('#pendaftaranModal').on('show.bs.modal', function (event) {
-        var button = $(event.relatedTarget)
-        var jadwalpoliklinikId = button.data('id')
-        var modal = $(this)
-        modal.find('#jadwalpoliklinik_id').val(jadwalpoliklinikId)
-    })
-    
-    function toggleSuratRujukan() {
-        var penjamin = document.getElementById('penjamin').value;
-        var suratRujukanGroup = document.getElementById('scan_surat_rujukan_group');
-        
-        if (penjamin === 'BPJS') {
-            if (suratRujukanGroup) {
-                suratRujukanGroup.style.display = 'block';
-            }
-        } else {
-            if (suratRujukanGroup) {
-                suratRujukanGroup.style.display = 'none';
-            }
-        }
-    }
-</script>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        // Show the tab based on URL hash if present
+        let hash = window.location.hash;
+        if (hash) {
+            $('#jadwalTab a[href="'+hash+'"]').tab('show');
+        }
+
+        // Change URL hash when tab is clicked
+        $('#jadwalTab a').on('click', function(e) {
+            window.location.hash = $(this).attr('href');
+        });
+    });
+</script>
+@endpush

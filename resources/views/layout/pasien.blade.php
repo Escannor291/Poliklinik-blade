@@ -30,6 +30,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
 
+    @push('styles')
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
+    @endpush
 </head>
 
 <body id="page-top">
@@ -65,18 +68,18 @@
             </li>
 
             <!-- Nav Item - Pendaftaran -->
-            <li class="nav-item">
-                <a class="nav-link" href="">
+            <li class="nav-item {{ request()->is('pendaftaran*') || request()->is('pendaftaran-pasien*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('pendaftaran.pasien') }}">
                     <i class="fas fa-fw fa-calendar-plus"></i>
                     <span>Pendaftaran</span>
                 </a>
             </li>
 
-            <!-- Nav Item - Laporan Pendaftaran -->
-            <li class="nav-item">
-                <a class="nav-link" href="">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>Laporan Pendaftaran</span>
+            <!-- Nav Item - Riwayat Pendaftaran -->
+            <li class="nav-item {{ request()->is('riwayat-pendaftaran*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('pendaftaran.history') }}">
+                    <i class="fas fa-fw fa-history"></i>
+                    <span>Riwayat Pendaftaran</span>
                 </a>
             </li>
             
@@ -195,5 +198,9 @@
     <!-- Page level custom scripts -->
     <script src="{{ asset('template/js/demo/datatables-demo.js') }}"></script>
     @stack('scripts')
+    @push('scripts')
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap4.min.js"></script>
+    @endpush
 </body>
 </html>

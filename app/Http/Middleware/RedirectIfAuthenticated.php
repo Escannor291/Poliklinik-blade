@@ -9,6 +9,14 @@ use Illuminate\Support\Facades\Auth;
 
 class RedirectIfAuthenticated
 {
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse)  $next
+     * @param  string|null  ...$guards
+     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+     */
     public function handle(Request $request, Closure $next, ...$guards)
     {
         $guards = empty($guards) ? [null] : $guards;
@@ -16,16 +24,16 @@ class RedirectIfAuthenticated
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 $user = Auth::user();
-                switch ($user->roles) {
-                    case 'admin':
-                        return redirect()->route('dashboard-admin');
-                    case 'petugas':
-                        return redirect()->route('dashboard-petugas');
-                    case 'pasien':
-                        return redirect()->route('dashboard-pasien');
-                    default:
-                        return redirect('/login');
-                }
+                
+                if ($user->roles == 'admin') {
+                    return redirect('/dashboard-admin');
+                } elseif ($user->roles == 'petugas') {
+                    return redirect('/dashboard-petugas');
+                } elseif ($user->roles == 'pasien') {
+                    return redirect('/dashboard-pasien');
+                } 
+                
+                return redirect('/');
             }
         }
 

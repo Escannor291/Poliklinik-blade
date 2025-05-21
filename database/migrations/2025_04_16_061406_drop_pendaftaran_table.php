@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -13,17 +14,14 @@ return new class extends Migration
      */
     public function up()
     {
-        // Drop any foreign keys first to avoid constraint issues
-        Schema::table('pendaftaran', function (Blueprint $table) {
-            try {
-                $table->dropForeign(['jadwalpoliklinik_id']);
-                $table->dropForeign(['id_pasien']);
-            } catch (\Exception $e) {
-                // It's okay if constraints don't exist
-            }
-        });
-
+        // Matikan foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        
+        // Hapus tabel langsung tanpa mencoba menghapus foreign keys satu per satu
         Schema::dropIfExists('pendaftaran');
+        
+        // Aktifkan kembali foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 
     /**
@@ -33,6 +31,17 @@ return new class extends Migration
      */
     public function down()
     {
-        // We don't recreate the table in down() as it will be recreated by the next migration
+        // Recreate the table if needed in down()
+        if (!Schema::hasTable('pendaftaran')) {
+            Schema::create('pendaftaran', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('id_pasien')->nullable();
+                $table->unsignedBigInteger('jadwalpoliklinik_id');
+                $table->string('nama_pasien')->nullable();
+                $table->enum('penjamin', ['UMUM', 'BPJS', 'Asuransi']);
+                $table->string('scan_surat_rujukan')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 };

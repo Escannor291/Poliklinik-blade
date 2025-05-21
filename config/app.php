@@ -167,6 +167,9 @@ return [
         /*
          * Package Service Providers...
          */
+        // Hapus atau komentari baris berikut jika belum menginstal package-nya:
+        // Barryvdh\DomPDF\ServiceProvider::class,
+        Milon\Barcode\BarcodeServiceProvider::class,
 
         /*
          * Application Service Providers...
@@ -192,6 +195,10 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // ...
+        // Hapus atau komentari baris berikut jika belum menginstal package-nya:
+        // 'PDF' => Barryvdh\DomPDF\Facade::class,
+        'DNS1D' => Milon\Barcode\Facades\DNS1D::class,
+        'DNS2D' => Milon\Barcode\Facades\DNS2D::class,
     ])->toArray(),
 
 ];

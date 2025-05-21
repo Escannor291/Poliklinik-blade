@@ -7,6 +7,7 @@ use App\Models\JadwalPoliklinik;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class JadwalPoliklinikController extends Controller
 {
@@ -35,52 +36,52 @@ class JadwalPoliklinikController extends Controller
     
 
     public function create()
-{
-    $dokter = Dokter::all();
-    return view('jadwalpoliklinik.create', compact('dokter'));
-}
-
-
-public function add(Request $request)
-{
-    try {
-        \Log::info('Memproses tambah jadwal poliklinik', $request->all());
-
-        $validatedData = $request->validate([
-            'dokter_id' => 'required|exists:dokter,id',
-            'tanggal_praktek' => 'required|date',
-            'jam_mulai' => 'required|date_format:H:i',
-            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
-            'jumlah' => 'required|integer|min:1',
-        ]);
-
-        $dokter = Dokter::findOrFail($request->dokter_id);
-
-        $jadwalpoliklinik = new JadwalPoliklinik();
-        $jadwalpoliklinik->kode = 'JP-' . Str::random(8);
-        $jadwalpoliklinik->dokter_id = $dokter->id;
-        $jadwalpoliklinik->poliklinik_id = $dokter->poliklinik_id;
-        $jadwalpoliklinik->tanggal_praktek = $request->tanggal_praktek;
-        $jadwalpoliklinik->jam_mulai = $request->jam_mulai;
-        $jadwalpoliklinik->jam_selesai = $request->jam_selesai;
-        $jadwalpoliklinik->jumlah = $request->jumlah;
-        
-        // Tambahkan logging sebelum save
-        \Log::info('Data jadwal akan disimpan', $jadwalpoliklinik->toArray());
-        
-        $jadwalpoliklinik->save();
-
-        return redirect()->route('jadwalpoliklinik.index')
-            ->with('success', 'Jadwal poliklinik berhasil ditambahkan');
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        // Log validation errors
-        \Log::error('Validation Error: ' . json_encode($e->errors()));
-        return back()->withErrors($e->errors())->withInput();
-    } catch (\Exception $e) {
-        \Log::error('Tambah Jadwal Poliklinik Error: ' . $e->getMessage());
-        return back()->withInput()->with('error', 'Gagal menambahkan jadwal: ' . $e->getMessage());
+    {
+        $dokter = Dokter::all();
+        return view('jadwalpoliklinik.create', compact('dokter'));
     }
-}
+
+
+    public function add(Request $request)
+    {
+        try {
+            \Log::info('Memproses tambah jadwal poliklinik', $request->all());
+
+            $validatedData = $request->validate([
+                'dokter_id' => 'required|exists:dokter,id',
+                'tanggal_praktek' => 'required|date',
+                'jam_mulai' => 'required|date_format:H:i',
+                'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
+                'jumlah' => 'required|integer|min:1',
+            ]);
+
+            $dokter = Dokter::findOrFail($request->dokter_id);
+
+            $jadwalpoliklinik = new JadwalPoliklinik();
+            $jadwalpoliklinik->dokter_id = $dokter->id;
+            $jadwalpoliklinik->poliklinik_id = $dokter->poliklinik_id;
+            $jadwalpoliklinik->tanggal_praktek = $request->tanggal_praktek;
+            $jadwalpoliklinik->jam_mulai = $request->jam_mulai;
+            $jadwalpoliklinik->jam_selesai = $request->jam_selesai;
+            $jadwalpoliklinik->jumlah = $request->jumlah;
+            $jadwalpoliklinik->kuota = $request->jumlah; // Set kuota sama dengan jumlah
+            
+            // Tambahkan logging sebelum save
+            \Log::info('Data jadwal akan disimpan', $jadwalpoliklinik->toArray());
+            
+            $jadwalpoliklinik->save();
+
+            return redirect()->route('jadwalpoliklinik.index')
+                ->with('success', 'Jadwal poliklinik berhasil ditambahkan');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Log validation errors
+            \Log::error('Validation Error: ' . json_encode($e->errors()));
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Tambah Jadwal Poliklinik Error: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal menambahkan jadwal: ' . $e->getMessage());
+        }
+    }
 
     public function edit($id)
     {
@@ -110,7 +111,18 @@ public function add(Request $request)
         $jadwalpoliklinik->tanggal_praktek = $request->tanggal_praktek;
         $jadwalpoliklinik->jam_mulai = $request->jam_mulai;
         $jadwalpoliklinik->jam_selesai = $request->jam_selesai;
+        
+        // Hitung selisih antara jumlah baru dan lama
+        $selisih = $request->jumlah - $jadwalpoliklinik->jumlah;
+        
+        // Update jumlah
         $jadwalpoliklinik->jumlah = $request->jumlah;
+        
+        // Jika ada kolom kuota, update juga kuota dengan menambah selisih
+        if (Schema::hasColumn('jadwalpoliklinik', 'kuota')) {
+            $jadwalpoliklinik->kuota = max(0, $jadwalpoliklinik->kuota + $selisih);
+        }
+        
         $jadwalpoliklinik->save();
     
         return redirect()->route('jadwalpoliklinik.index')->with('success', 'Data berhasil diperbarui');

@@ -7,349 +7,383 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 
 class DatapasienController extends Controller
 {
     /**
-     * Constructor to apply middleware
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
      */
-    public function __construct()
+    public function index()
     {
-        // Apply auth middleware to all methods
-        $this->middleware('auth');
+        // Get all patient data
+        $dataPasien = Datapasien::latest()->get();
+        return view('datapasien.index', compact('dataPasien'));
     }
-    
+
     /**
-     * Display a listing of patients.
-     */
-    public function index(Request $request)
-    {
-        // Check if user has permission to view all patients
-        if (!in_array(Auth::user()->roles, ['admin', 'petugas', 'kepala_rs'])) {
-            return redirect()->route('dashboard-pasien')->with('error', 'Anda tidak memiliki akses ke halaman ini.');
-        }
-        
-        // Get search input
-        $search = $request->input('search');
-        
-        // Base query to get data for patients with role 'pasien'
-        $query = Datapasien::whereHas('user', function($query) {
-            $query->where('roles', 'pasien');
-        });
-        
-        // If search term exists, filter data based on all mentioned columns
-        if ($search) {
-            $query->where(function($query) use ($search) {
-                $query->where('nama_pasien', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%')
-                    ->orWhere('no_telp', 'like', '%' . $search . '%')
-                    ->orWhere('nik', 'like', '%' . $search . '%')
-                    ->orWhere('tempat_lahir', 'like', '%' . $search . '%')
-                    ->orWhere('tanggal_lahir', 'like', '%' . $search . '%')
-                    ->orWhere('jenis_kelamin', 'like', '%' . $search . '%')
-                    ->orWhere('alamat', 'like', '%' . $search . '%')
-                    ->orWhere('no_kberobat', 'like', '%' . $search . '%')
-                    ->orWhere('no_kbpjs', 'like', '%' . $search . '%');
-            });
-        }
-        
-        // Get query results
-        $dataPasien = $query->get();
-        
-        // Display view with filtered patient data
-        return view('pasien.index', compact('dataPasien'));
-    }
-    
-    /**
-     * Display the specified patient.
-     */
-    public function show($id)
-    {
-        $user = Auth::user();
-        
-        // Define roles that have the same access rights
-        $allowedRoles = ['admin', 'petugas', 'kepala_rs'];
-        
-        if (in_array($user->roles, $allowedRoles)) {
-            // If user has one of the allowed roles, display patient data based on the given ID
-            $dataPasien = Datapasien::findOrFail($id);
-        } else {
-            // If not one of the allowed roles, display patient data belonging to the logged-in user
-            $dataPasien = Datapasien::where('user_id', $user->id)->first();
-            
-            if (!$dataPasien) {
-                $dataPasien = new Datapasien([
-                    'nama_pasien' => $user->nama_user,
-                    'email' => $user->username,
-                    'no_telp' => $user->no_telepon,
-                    'user_id' => $user->id,
-                ]);
-                $dataPasien->save();
-            }
-            
-            // Override the ID to be the ID of the logged-in user's patient record
-            $id = $dataPasien->id;
-            
-            // Check if scan files exist in the appropriate directory
-            $dataPasien->scan_ktp = $dataPasien->scan_ktp && file_exists(public_path('storage/' . $dataPasien->scan_ktp))
-                ? $dataPasien->scan_ktp : null;
-            $dataPasien->scan_kberobat = $dataPasien->scan_kberobat && file_exists(public_path('storage/' . $dataPasien->scan_kberobat))
-                ? $dataPasien->scan_kberobat : null;
-            $dataPasien->scan_kbpjs = $dataPasien->scan_kbpjs && file_exists(public_path('storage/' . $dataPasien->scan_kbpjs))
-                ? $dataPasien->scan_kbpjs : null;
-            $dataPasien->scan_kasuransi = $dataPasien->scan_kasuransi && file_exists(public_path('storage/' . $dataPasien->scan_kasuransi))
-                ? $dataPasien->scan_kasuransi : null;
-        }
-        
-        return view('pasien.show', compact('dataPasien', 'user'));
-    }
-    
-    /**
-     * Show the form for creating a new patient record.
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
      */
     public function create()
     {
-        $user = Auth::user();
-        
-        // If admin or petugas, they can create for specific patient
-        if (in_array($user->roles, ['admin', 'petugas'])) {
-            // Get list of users with 'pasien' role who don't have patient data yet
-            $pasienUsers = User::where('roles', 'pasien')
-                ->whereNotIn('id', function($query) {
-                    $query->select('user_id')
-                        ->from('datapasien')
-                        ->whereNotNull('user_id');
-                })
-                ->get();
-                
-            return view('pasien.create', compact('user', 'pasienUsers'));
-        }
-        
-        // For patient themselves
-        return view('pasien.create', compact('user'));
+        // Remove user selection - no longer linking to users
+        return view('datapasien.create');
     }
 
     /**
-     * Store a newly created patient record in storage.
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
     {
-        // Validate request data - more permissive validation
-        $request->validate([
+        // Validate the form data
+        $validatedData = $request->validate([
             'nama_pasien' => 'required|string|max:255',
-            'email' => 'required|email',
-            'no_telp' => 'required|string|max:15',
+            'email' => 'nullable|email|max:255',
+            'no_telp' => 'nullable|string|max:15',
             'nik' => 'nullable|string|max:16',
-            'tempat_lahir' => 'nullable|string|max:100',
+            'tempat_lahir' => 'nullable|string|max:255',
             'tanggal_lahir' => 'nullable|date',
-            'jenis_kelamin' => 'nullable|in:laki-laki,perempuan',
+            'jenis_kelamin' => 'nullable|in:Laki-laki,Perempuan',
             'alamat' => 'nullable|string',
-            'no_kberobat' => 'nullable|string|max:50',
-            'no_kbpjs' => 'nullable|string|max:50',
-            'scan_ktp' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'scan_kberobat' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'scan_kbpjs' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'scan_kasuransi' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'scan_ktp' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         try {
-            DB::beginTransaction();
+            // Create new patient data
+            $datapasien = new Datapasien();
+            // The user_id is now nullable, so we don't need to provide it
+            // $datapasien->user_id = null; // This line is not needed as NULL is the default for nullable fields
+            $datapasien->nama_pasien = $validatedData['nama_pasien'];
+            $datapasien->email = $validatedData['email'] ?? null;
+            $datapasien->no_telp = $validatedData['no_telp'] ?? null;
+            $datapasien->nik = $validatedData['nik'] ?? null;
+            $datapasien->tempat_lahir = $validatedData['tempat_lahir'] ?? null;
+            $datapasien->tanggal_lahir = $validatedData['tanggal_lahir'] ?? null;
+            $datapasien->jenis_kelamin = $validatedData['jenis_kelamin'] ?? null;
+            $datapasien->alamat = $validatedData['alamat'] ?? null;
 
-            $user = Auth::user();
-            $userId = $user->id;
-            
-            // If admin/petugas is creating for another user
-            if (in_array($user->roles, ['admin', 'petugas']) && $request->has('user_id')) {
-                $userId = $request->user_id;
-            }
-
-            // Create new patient record
-            $dataPasien = new Datapasien();
-            $dataPasien->nama_pasien = $request->nama_pasien;
-            $dataPasien->email = $request->email;
-            $dataPasien->no_telp = $request->no_telp;
-            $dataPasien->nik = $request->nik;
-            $dataPasien->tempat_lahir = $request->tempat_lahir;
-            $dataPasien->tanggal_lahir = $request->tanggal_lahir;
-            $dataPasien->jenis_kelamin = $request->jenis_kelamin;
-            $dataPasien->alamat = $request->alamat;
-            $dataPasien->no_kberobat = $request->no_kberobat;
-            $dataPasien->no_kbpjs = $request->no_kbpjs;
-            $dataPasien->user_id = $userId;
-            
-            // Handle file uploads
+            // Handle KTP file upload
             if ($request->hasFile('scan_ktp')) {
-                $path = $request->file('scan_ktp')->store('scan_ktp', 'public');
-                $dataPasien->scan_ktp = $path;
+                $path = $request->file('scan_ktp')->store('ktp', 'public');
+                $datapasien->scan_ktp = $path;
             }
-            
-            if ($request->hasFile('scan_kberobat')) {
-                $path = $request->file('scan_kberobat')->store('scan_kberobat', 'public');
-                $dataPasien->scan_kberobat = $path;
-            }
-            
-            if ($request->hasFile('scan_kbpjs')) {
-                $path = $request->file('scan_kbpjs')->store('scan_kbpjs', 'public');
-                $dataPasien->scan_kbpjs = $path;
-            }
-            
-            if ($request->hasFile('scan_kasuransi')) {
-                $path = $request->file('scan_kasuransi')->store('scan_kasuransi', 'public');
-                $dataPasien->scan_kasuransi = $path;
-            }
-            
-            $dataPasien->save();
 
-            DB::commit();
+            $datapasien->save();
 
-            // Redirect based on user role
-            if (in_array($user->roles, ['admin', 'petugas'])) {
-                return redirect()->route('pasien.index')->with('success', 'Data pasien berhasil ditambahkan');
-            } else {
-                return redirect()->route('pasien.show', $dataPasien->id)->with('success', 'Data pasien berhasil ditambahkan');
-            }
-            
+            return redirect()->route('pasien.index')
+                ->with('success', 'Data pasien berhasil ditambahkan.');
         } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
+            \Log::error('Error creating patient: ' . $e->getMessage());
+            return redirect()->back()->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
     /**
-     * Show the form for editing the specified patient.
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        try {
+            $dataPasien = Datapasien::findOrFail($id);
+            
+            // Use the correct layout based on user role
+            $view = Auth::user()->roles === 'pasien' ? 'pasien.show' : 'datapasien.show';
+            
+            return view($view, compact('dataPasien'));
+        } catch (\Exception $e) {
+            return redirect()->route('pasien.index')->with('error', 'Data pasien tidak ditemukan.');
+        }
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
      */
     public function edit($id)
     {
-        $user = Auth::user();
-        $allowedRoles = ['admin', 'petugas'];
-        
-        // If admin or petugas, can edit any patient record
-        if (in_array($user->roles, $allowedRoles)) {
+        try {
+            // Get patient data
             $dataPasien = Datapasien::findOrFail($id);
-        } else {
+            
             // If patient, can only edit their own record
-            $dataPasien = Datapasien::where('user_id', $user->id)->firstOrFail();
+            if (Auth::user()->roles === 'pasien') {
+                $dataPasien = Datapasien::where('user_id', Auth::id())->firstOrFail();
+            }
+            
+            return view('pasien.update', compact('dataPasien'));
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-        
-        return view('pasien.update', compact('dataPasien'));
     }
-    
+
     /**
-     * Update the specified patient in storage.
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'nik' => 'required|string|max:16',
-            'tempat_lahir' => 'required|string',
-            'tanggal_lahir' => 'required|date',
-            'jenis_kelamin' => 'required',
-            'alamat' => 'required|string',
-            'no_kberobat' => 'nullable|string',
-            'no_kbpjs' => 'nullable|string',
-            'scan_ktp' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'scan_kberobat' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'scan_kbpjs' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'scan_kasuransi' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
-        
-        $user = Auth::user();
-        $allowedRoles = ['admin', 'petugas']; 
-        
-        // If admin or petugas, can update any patient record
-        if (in_array($user->roles, $allowedRoles)) {
-            $dataPasien = Datapasien::findOrFail($id);
-        } else {
-            // If patient, can only update their own record
-            $dataPasien = Datapasien::where('user_id', $user->id)->firstOrFail();
-        }
-        
         try {
-            DB::beginTransaction();
+            // Validate inputs
+            $validatedData = $request->validate([
+                'nama_pasien' => 'required|string|max:255',
+                'no_telp' => 'nullable|string|max:15',
+                'nik' => 'nullable|string|max:16',
+                'tempat_lahir' => 'nullable|string|max:255',
+                'tanggal_lahir' => 'nullable|date',
+                'jenis_kelamin' => 'nullable|in:Laki-laki,Perempuan',
+                'alamat' => 'nullable|string|max:255',
+                'no_kberobat' => 'nullable|string|max:20',
+                'scan_ktp' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'scan_kberobat' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            ]);
+
+            // Find the datapasien by ID
+            $datapasien = Datapasien::findOrFail($id);
             
             // Update basic fields
-            $dataPasien->nik = $request->nik;
-            $dataPasien->tempat_lahir = $request->tempat_lahir;
-            $dataPasien->tanggal_lahir = $request->tanggal_lahir;
-            $dataPasien->jenis_kelamin = $request->jenis_kelamin;
-            $dataPasien->alamat = $request->alamat;
-            $dataPasien->no_kberobat = $request->no_kberobat;
-            $dataPasien->no_kbpjs = $request->no_kbpjs;
-            
-            // Handle file uploads
+            $datapasien->nama_pasien = $validatedData['nama_pasien'];
+            $datapasien->no_telp = $validatedData['no_telp'];
+            $datapasien->nik = $validatedData['nik'];
+            $datapasien->tempat_lahir = $validatedData['tempat_lahir'];
+            $datapasien->tanggal_lahir = $validatedData['tanggal_lahir'];
+            $datapasien->jenis_kelamin = $validatedData['jenis_kelamin'];
+            $datapasien->alamat = $validatedData['alamat'];
+            $datapasien->no_kberobat = $validatedData['no_kberobat'];
+
+            // Handle KTP file upload
             if ($request->hasFile('scan_ktp')) {
-                // Remove old file if it exists
-                if ($dataPasien->scan_ktp) {
-                    Storage::disk('public')->delete($dataPasien->scan_ktp);
+                // Delete old file if exists
+                if ($datapasien->scan_ktp) {
+                    Storage::disk('public')->delete($datapasien->scan_ktp);
                 }
-                $path = $request->file('scan_ktp')->store('scan_ktp', 'public');
-                $dataPasien->scan_ktp = $path;
+                
+                // Store new file
+                $ktpPath = $request->file('scan_ktp')->store('ktp', 'public');
+                $datapasien->scan_ktp = $ktpPath;
             }
-            
+
+            // Handle Kartu Berobat file upload
             if ($request->hasFile('scan_kberobat')) {
-                if ($dataPasien->scan_kberobat) {
-                    Storage::disk('public')->delete($dataPasien->scan_kberobat);
+                // Delete old file if exists
+                if ($datapasien->scan_kberobat) {
+                    Storage::disk('public')->delete($datapasien->scan_kberobat);
                 }
-                $path = $request->file('scan_kberobat')->store('scan_kberobat', 'public');
-                $dataPasien->scan_kberobat = $path;
+                
+                // Store new file
+                $berobatPath = $request->file('scan_kberobat')->store('kartu_berobat', 'public');
+                $datapasien->scan_kberobat = $berobatPath;
             }
+
+            // Save the changes
+            $datapasien->save();
             
-            if ($request->hasFile('scan_kbpjs')) {
-                if ($dataPasien->scan_kbpjs) {
-                    Storage::disk('public')->delete($dataPasien->scan_kbpjs);
-                }
-                $path = $request->file('scan_kbpjs')->store('scan_kbpjs', 'public');
-                $dataPasien->scan_kbpjs = $path;
+            // Log success
+            Log::info('Datapasien updated successfully', ['id' => $id]);
+
+            // Redirect with success message
+            if (auth()->user()->roles == 'pasien') {
+                return redirect()->route('dashboard-pasien')
+                    ->with('success', 'Data pasien berhasil diperbarui');
+            } else {
+                return redirect()->route('pasien.index')
+                    ->with('success', 'Data pasien berhasil diperbarui');
             }
-            
-            if ($request->hasFile('scan_kasuransi')) {
-                if ($dataPasien->scan_kasuransi) {
-                    Storage::disk('public')->delete($dataPasien->scan_kasuransi);
-                }
-                $path = $request->file('scan_kasuransi')->store('scan_kasuransi', 'public');
-                $dataPasien->scan_kasuransi = $path;
-            }
-            
-            $dataPasien->save();
-            
-            DB::commit();
-            
-            return redirect()->route('pasien.show', $dataPasien->id)->with('success', 'Data pasien berhasil diupdate.');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Datapasien not found', ['id' => $id, 'error' => $e->getMessage()]);
+            return back()->with('error', 'Data pasien tidak ditemukan');
         } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
+            Log::error('Error updating datapasien', ['id' => $id, 'error' => $e->getMessage()]);
+            return back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
-    
+
     /**
-     * Remove the specified patient from storage.
+     * Update insurance information for a patient.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function updateInsurance(Request $request, $id)
+    {
+        try {
+            \Illuminate\Support\Facades\Log::info('Starting insurance update', [
+                'id' => $id,
+                'insurance_type' => $request->insurance_type
+            ]);
+
+            // Validate the incoming request
+            $validationRules = [
+                'insurance_type' => 'required|in:bpjs,asuransi',
+            ];
+            
+            // Add specific rules based on insurance type
+            if ($request->insurance_type == 'bpjs') {
+                $validationRules['no_bpjs'] = 'required|string|max:20';
+                if ($request->hasFile('scan_bpjs')) {
+                    $validationRules['scan_bpjs'] = 'file|mimes:jpeg,png,jpg,pdf|max:2048';
+                }
+            } else if ($request->insurance_type == 'asuransi') {
+                if ($request->hasFile('scan_asuransi')) {
+                    $validationRules['scan_asuransi'] = 'file|mimes:jpeg,png,jpg,pdf|max:2048';
+                }
+            }
+            
+            $request->validate($validationRules);
+            
+            \Illuminate\Support\Facades\Log::info('Validation passed');
+
+            // Create missing columns if needed
+            $this->ensureInsuranceColumnsExist();
+            \Illuminate\Support\Facades\Log::info('Checked and ensured columns exist');
+
+            // Find the datapasien by ID
+            $datapasien = \App\Models\Datapasien::findOrFail($id);
+            \Illuminate\Support\Facades\Log::info('Found patient data', ['patient_id' => $datapasien->id]);
+            
+            // Update data based on insurance type
+            if ($request->insurance_type == 'bpjs') {
+                // Update no_bpjs
+                $datapasien->no_bpjs = $request->no_bpjs;
+                \Illuminate\Support\Facades\Log::info('Updated BPJS number', ['no_bpjs' => $request->no_bpjs]);
+                
+                // Handle file upload
+                if ($request->hasFile('scan_bpjs')) {
+                    \Illuminate\Support\Facades\Log::info('Processing BPJS scan upload');
+                    
+                    // Delete old file if exists
+                    if ($datapasien->scan_bpjs && \Illuminate\Support\Facades\Storage::disk('public')->exists($datapasien->scan_bpjs)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($datapasien->scan_bpjs);
+                        \Illuminate\Support\Facades\Log::info('Deleted old BPJS scan');
+                    }
+                    
+                    // Store new file
+                    $file = $request->file('scan_bpjs');
+                    $path = $file->store('bpjs', 'public');
+                    $datapasien->scan_bpjs = $path;
+                    \Illuminate\Support\Facades\Log::info('Stored new BPJS scan', ['path' => $path]);
+                }
+            } else if ($request->insurance_type == 'asuransi') {
+                // Handle file upload
+                if ($request->hasFile('scan_asuransi')) {
+                    \Illuminate\Support\Facades\Log::info('Processing insurance scan upload');
+                    
+                    // Delete old file if exists
+                    if ($datapasien->scan_asuransi && \Illuminate\Support\Facades\Storage::disk('public')->exists($datapasien->scan_asuransi)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($datapasien->scan_asuransi);
+                        \Illuminate\Support\Facades\Log::info('Deleted old insurance scan');
+                    }
+                    
+                    // Store new file
+                    $file = $request->file('scan_asuransi');
+                    $path = $file->store('asuransi', 'public');
+                    $datapasien->scan_asuransi = $path;
+                    \Illuminate\Support\Facades\Log::info('Stored new insurance scan', ['path' => $path]);
+                }
+            }
+            
+            // Save the changes
+            $datapasien->save();
+            \Illuminate\Support\Facades\Log::info('Insurance data saved successfully');
+            
+            return redirect()->back()->with('success', 'Data asuransi berhasil diperbarui');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('Validation error', ['errors' => $e->errors()]);
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error updating insurance', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Ensure that required insurance columns exist in the database
+     */
+    private function ensureInsuranceColumnsExist()
+    {
+        $schema = \Illuminate\Support\Facades\Schema::connection($this->getConnectionName());
+        $tableName = 'datapasien';
+        
+        if (!$schema->hasTable($tableName)) {
+            \Illuminate\Support\Facades\Log::error('Table datapasien does not exist');
+            throw new \Exception('Table datapasien does not exist');
+        }
+        
+        // Use DB statements to add columns if they don't exist
+        $columnsToCheck = ['no_bpjs', 'scan_bpjs', 'scan_asuransi'];
+        
+        foreach ($columnsToCheck as $column) {
+            if (!$schema->hasColumn($tableName, $column)) {
+                \Illuminate\Support\Facades\Log::info("Adding missing column {$column} to datapasien table");
+                
+                // Use raw query because Schema::table might not work properly in a controller
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE {$tableName} ADD COLUMN {$column} VARCHAR(255) NULL");
+            }
+        }
+    }
+
+    /**
+     * Get the database connection name
+     */
+    private function getConnectionName()
+    {
+        return config('database.default');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
      */
     public function destroy($id)
     {
-        // Only admin can delete patient records
-        if (Auth::user()->roles !== 'admin') {
-            return redirect()->route('pasien.index')->with('error', 'Anda tidak memiliki izin untuk menghapus data pasien.');
+        try {
+            $datapasien = Datapasien::findOrFail($id);
+            
+            // Delete associated files
+            if ($datapasien->scan_ktp) {
+                Storage::disk('public')->delete($datapasien->scan_ktp);
+            }
+            if ($datapasien->scan_kberobat) {
+                Storage::disk('public')->delete($datapasien->scan_kberobat);
+            }
+            if ($datapasien->scan_bpjs) {
+                Storage::disk('public')->delete($datapasien->scan_bpjs);
+            }
+            if ($datapasien->scan_asuransi) {
+                Storage::disk('public')->delete($datapasien->scan_asuransi);
+            }
+            
+            // Delete the record
+            $datapasien->delete();
+            
+            return redirect()->route('pasien.index')
+                ->with('success', 'Data pasien berhasil dihapus');
+        } catch (\Exception $e) {
+            return redirect()->route('pasien.index')
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-        
-        $dataPasien = Datapasien::findOrFail($id);
-        
-        // Delete associated files
-        if ($dataPasien->scan_ktp) {
-            Storage::disk('public')->delete($dataPasien->scan_ktp);
-        }
-        if ($dataPasien->scan_kberobat) {
-            Storage::disk('public')->delete($dataPasien->scan_kberobat);
-        }
-        if ($dataPasien->scan_kbpjs) {
-            Storage::disk('public')->delete($dataPasien->scan_kbpjs);
-        }
-        if ($dataPasien->scan_kasuransi) {
-            Storage::disk('public')->delete($dataPasien->scan_kasuransi);
-        }
-        
-        $dataPasien->delete();
-        
-        return redirect()->route('pasien.index')->with('success', 'Data pasien berhasil dihapus');
     }
 }

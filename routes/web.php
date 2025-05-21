@@ -12,9 +12,8 @@ use App\Http\Controllers\DatauserController;
 use App\Http\Controllers\DatapasienController;
 use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\AntrianController;
+use App\Http\Controllers\LaporanPendaftaranController;
 use Illuminate\Support\Facades\Route;
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -57,12 +56,12 @@ Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::get('/dokter/{id}', [DokterController::class, 'show'])->name('dokter.show');
 
     //JADWAL POLIKLINIK
-    Route::get('/jadwalpoliklinik', [JadwalpoliklinikController::class, 'index'])->name('jadwalpoliklinik.index');
+    Route::get('/jadwalpoliklinik', [JadwalPoliklinikController::class, 'index'])->name('jadwalpoliklinik.index');
     Route::get('/jadwalpoliklinik/create', [JadwalPoliklinikController::class, 'create'])->name('jadwalpoliklinik.create');
-    Route::post('/jadwalpoliklinik/add', [JadwalpoliklinikController::class, 'add'])->name('jadwalpoliklinik.add');
-    Route::get('/jadwalpoliklinik/{id}/edit', [JadwalpoliklinikController::class, 'edit'])->name('jadwalpoliklinik.edit');
-    Route::put('/jadwalpoliklinik/update/{id}', [JadwalpoliklinikController::class, 'update'])->name('jadwalpoliklinik.update');
-    Route::delete('/jadwalpoliklinik/{id}', [JadwalpoliklinikController::class, 'destroy'])->name('jadwalpoliklinik.destroy');
+    Route::post('/jadwalpoliklinik/add', [JadwalPoliklinikController::class, 'add'])->name('jadwalpoliklinik.add');
+    Route::get('/jadwalpoliklinik/{id}/edit', [JadwalPoliklinikController::class, 'edit'])->name('jadwalpoliklinik.edit');
+    Route::put('/jadwalpoliklinik/update/{id}', [JadwalPoliklinikController::class, 'update'])->name('jadwalpoliklinik.update');
+    Route::delete('/jadwalpoliklinik/{id}', [JadwalPoliklinikController::class, 'destroy'])->name('jadwalpoliklinik.destroy');
 
     //Data User - admin only
     Route::middleware(['role:admin'])->group(function () {
@@ -73,23 +72,21 @@ Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
         Route::put('/user/{id}', [DatauserController::class, 'update'])->name('user.update');
         Route::delete('/user/{id}', [DatauserController::class, 'destroy'])->name('user.destroy');
     });
+
+    // Admin registration routes
+    Route::get('/admin-pendaftaran', [PendaftaranController::class, 'adminRegistrationForm'])->name('pendaftaran.admin-form');
+    Route::post('/admin-pendaftaran/store', [PendaftaranController::class, 'storeAdminRegistration'])->name('pendaftaran.store-admin');
 });
 
-// Route untuk login
-Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('login', [LoginController::class, 'login']);
-
-Route::middleware(['redirect.if.authenticated'])->group(function () {
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    // Tambahkan rute lain yang ingin Anda lindungi
-
+// Route untuk login & registration
+Route::get('login', [LoginController::class, 'showLoginForm'])->name('login')->middleware('guest');
+Route::post('login', [LoginController::class, 'login'])->middleware('guest');
 
 // Route untuk register
-Route::get('register', [LoginController::class, 'showRegisterForm'])->name('register');
-Route::post('register', [LoginController::class, 'register']);
-});
+Route::get('register', [LoginController::class, 'showRegisterForm'])->name('register')->middleware('guest');
+Route::post('register', [LoginController::class, 'register'])->middleware('guest');
 
-//logout
+// Logout route
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
 // Profile Routes - accessible by any authenticated user
@@ -104,11 +101,37 @@ Route::middleware('auth')->group(function () {
     Route::get('/datapribadi/{id}', [DatapasienController::class, 'show'])->name('pasien.show');
     Route::get('/datapribadi/{id}/edit', [DatapasienController::class, 'edit'])->name('pasien.edit');
     Route::put('/datapribadi/{id}', [DatapasienController::class, 'update'])->name('pasien.update');
+    Route::post('/datapribadi/{id}/update-insurance', [DatapasienController::class, 'updateInsurance'])->name('pasien.update-insurance');
 });
+
 Route::get('/datapasien', [DatapasienController::class, 'index'])->name('pasien.index');
 Route::delete('/datapasien/{id}', [DatapasienController::class, 'destroy'])->name('pasien.destroy');
 // Add these new routes for creating patients
 Route::get('/datapasien/create', [DatapasienController::class, 'create'])->name('pasien.create');
 Route::post('/datapasien/add', [DatapasienController::class, 'store'])->name('pasien.store');
 
-Route::post('/pendaftaran/store', [PendaftaranController::class, 'store'])->name('pendaftaran.store');
+// Add the Pendaftaran routes - accessible by authenticated users
+Route::middleware('auth')->group(function () {
+    Route::get('/pendaftaran', [PendaftaranController::class, 'index'])->name('pendaftaran.index');
+    Route::get('/pendaftaran-pasien', [PendaftaranController::class, 'pasienDashboard'])->name('pendaftaran.pasien');
+    Route::get('/pendaftaran/with-layout', [PendaftaranController::class, 'indexWithLayout'])->name('pendaftaran.index.with-layout');
+    Route::get('/pendaftaran/get-jadwal', [PendaftaranController::class, 'getJadwal'])->name('pendaftaran.get-jadwal');
+    Route::post('/pendaftaran/store', [PendaftaranController::class, 'store'])->name('pendaftaran.store');
+    Route::get('/pendaftaran/{jadwal_id}', [PendaftaranController::class, 'showForm'])->name('pendaftaran.show');
+    Route::get('/riwayat-pendaftaran', [PendaftaranController::class, 'history'])->name('pendaftaran.history');
+
+    // Add new admin registration routes
+    Route::get('/admin-pendaftaran', [PendaftaranController::class, 'adminRegistrationForm'])->name('pendaftaran.admin-form')
+        ->middleware('role:admin,petugas');
+    Route::post('/admin-pendaftaran/store', [PendaftaranController::class, 'storeAdminRegistration'])->name('pendaftaran.store-admin')
+        ->middleware('role:admin,petugas');
+
+    // Laporan Pendaftaran routes
+    Route::get('/laporan-pendaftaran', [LaporanPendaftaranController::class, 'index'])->name('laporan_pendaftaran.index');
+    Route::get('/laporan-pendaftaran/export-pdf', [LaporanPendaftaranController::class, 'exportPdf'])->name('laporan_pendaftaran.export_pdf');
+    Route::get('/laporan-pendaftaran/get-dokters', [LaporanPendaftaranController::class, 'getDoktersByPoliklinik'])->name('laporan_pendaftaran.get_dokters');
+    Route::get('/laporan-pendaftaran/{id}/edit', [LaporanPendaftaranController::class, 'edit'])->name('laporan_pendaftaran.edit')->middleware('role:admin');
+    Route::put('/laporan-pendaftaran/{id}', [LaporanPendaftaranController::class, 'update'])->name('laporan_pendaftaran.update')->middleware('role:admin');
+    Route::delete('/laporan-pendaftaran/{id}', [LaporanPendaftaranController::class, 'destroy'])->name('laporan_pendaftaran.destroy')->middleware('role:admin');
+    Route::get('/laporan-pendaftaran/{id}/pdf', [LaporanPendaftaranController::class, 'downloadPdf'])->name('laporan_pendaftaran.download_pdf');
+});

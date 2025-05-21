@@ -13,15 +13,20 @@ return new class extends Migration
      */
     public function up()
     {
+        // Check if table exists and drop it (to fix structure)
+        if (Schema::hasTable('antrian')) {
+            Schema::dropIfExists('antrian');
+        }
+
         Schema::create('antrian', function (Blueprint $table) {
             $table->id();
-            $table->integer('kode_jadwalpoliklinik');
-            $table->bigInteger('kode_antrian')->nullable()->unique();
+            $table->string('kode_jadwalpoliklinik', 255); // Pastikan ini string dengan panjang memadai
+            $table->integer('kode_antrian')->nullable(); // Keep this as integer as per previous change
             $table->integer('no_antrian');
             $table->string('nama_pasien');
             $table->string('no_telp')->nullable();
-            $table->foreignId('jadwalpoliklinik_id')->constrained('jadwalpoliklinik');
-            $table->foreignId('id_pasien')->constrained('datapasien');
+            $table->unsignedBigInteger('jadwalpoliklinik_id');
+            $table->unsignedBigInteger('id_pasien')->nullable();
             $table->string('nama_dokter');
             $table->string('poliklinik');
             $table->string('penjamin');
@@ -31,8 +36,19 @@ return new class extends Migration
             $table->date('tanggal_berobat');
             $table->date('tanggal_reservasi');
             $table->string('scan_surat_rujukan')->nullable();
-            $table->foreignId('user_id')->nullable()->constrained('user');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamps();
+
+            // Define foreign keys if tables exist
+            if (Schema::hasTable('jadwalpoliklinik')) {
+                $table->foreign('jadwalpoliklinik_id')->references('id')->on('jadwalpoliklinik')->onDelete('cascade');
+            }
+            if (Schema::hasTable('datapasien')) {
+                $table->foreign('id_pasien')->references('id')->on('datapasien')->onDelete('set null');
+            }
+            if (Schema::hasTable('user')) {
+                $table->foreign('user_id')->references('id')->on('user')->onDelete('set null');
+            }
         });
     }
 

@@ -1,157 +1,250 @@
-@extends(
-    Auth::user()->roles == 'admin' ? 'layout.admin' :
-    (Auth::user()->roles == 'pasien' ? 'layout.pasien' : 'layout.default')
-)
+@extends('layout.pasien')
 
 @section('title', 'Edit Data Pasien')
 
 @section('content')
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Edit Data Pasien</h6>
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Edit Data Pasien</h1>
+        <a href="{{ route('pasien.show', $dataPasien->id) }}" class="btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Kembali
+        </a>
     </div>
-    <div class="card-body">
-        <form action="{{ route('pasien.update', $dataPasien->id) }}" method="POST" enctype="multipart/form-data">
-            @method('PUT')
-            @csrf
-            <div class="form-group">
-                <label for="nik">NIK</label>
-                <input type="text" name="nik" id="nik" class="form-control @error('nik') is-invalid @enderror" maxlength="16" value="{{ old('nik', $dataPasien->nik) }}">
-                @error('nik')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ session('error') }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    @endif
+
+    @if ($errors->any())
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
+    <div class="row">
+        <!-- Personal Data -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Data Pribadi</h6>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('pasien.update', $dataPasien->id) }}" method="POST" enctype="multipart/form-data" id="updateForm">
+                        @csrf
+                        @method('PUT')
+                        
+                        <div class="form-group row">
+                            <label for="nama_pasien" class="col-sm-3 col-form-label">Nama Lengkap <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="nama_pasien" name="nama_pasien" value="{{ old('nama_pasien', $dataPasien->nama_pasien) }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="no_telp" class="col-sm-3 col-form-label">Nomor Telepon</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="no_telp" name="no_telp" value="{{ old('no_telp', $dataPasien->no_telp) }}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="nik" class="col-sm-3 col-form-label">NIK</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="nik" name="nik" value="{{ old('nik', $dataPasien->nik) }}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="tempat_lahir" class="col-sm-3 col-form-label">Tempat Lahir</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="tempat_lahir" name="tempat_lahir" value="{{ old('tempat_lahir', $dataPasien->tempat_lahir) }}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="tanggal_lahir" class="col-sm-3 col-form-label">Tanggal Lahir</label>
+                            <div class="col-sm-9">
+                                <input type="date" class="form-control" id="tanggal_lahir" name="tanggal_lahir" value="{{ old('tanggal_lahir', $dataPasien->tanggal_lahir) }}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="jenis_kelamin" class="col-sm-3 col-form-label">Jenis Kelamin</label>
+                            <div class="col-sm-9">
+                                <select class="form-control" id="jenis_kelamin" name="jenis_kelamin">
+                                    <option value="">-- Pilih Jenis Kelamin --</option>
+                                    <option value="Laki-laki" {{ old('jenis_kelamin', $dataPasien->jenis_kelamin) === 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
+                                    <option value="Perempuan" {{ old('jenis_kelamin', $dataPasien->jenis_kelamin) === 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="alamat" class="col-sm-3 col-form-label">Alamat</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" id="alamat" name="alamat" rows="3">{{ old('alamat', $dataPasien->alamat) }}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="no_kberobat" class="col-sm-3 col-form-label">No. Kartu Berobat</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="no_kberobat" name="no_kberobat" value="{{ old('no_kberobat', $dataPasien->no_kberobat) }}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="scan_ktp" class="col-sm-3 col-form-label">Scan KTP</label>
+                            <div class="col-sm-9">
+                                <input type="file" class="form-control-file" id="scan_ktp" name="scan_ktp">
+                                @if($dataPasien->scan_ktp)
+                                <div class="mt-2">
+                                    <small class="form-text text-muted">File yang sudah diunggah: <a href="{{ asset('storage/'.$dataPasien->scan_ktp) }}" target="_blank">Lihat KTP</a></small>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <label for="scan_kberobat" class="col-sm-3 col-form-label">Scan Kartu Berobat</label>
+                            <div class="col-sm-9">
+                                <input type="file" class="form-control-file" id="scan_kberobat" name="scan_kberobat">
+                                @if($dataPasien->scan_kberobat)
+                                <div class="mt-2">
+                                    <small class="form-text text-muted">File yang sudah diunggah: <a href="{{ asset('storage/'.$dataPasien->scan_kberobat) }}" target="_blank">Lihat Kartu Berobat</a></small>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        
+                        <div class="form-group row">
+                            <div class="col-sm-9 offset-sm-3">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="fas fa-save mr-2"></i>Simpan Perubahan
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="tempat_lahir">Tempat Lahir</label>
-                <input type="text" name="tempat_lahir" id="tempat_lahir" class="form-control @error('tempat_lahir') is-invalid @enderror" value="{{ old('tempat_lahir', $dataPasien->tempat_lahir) }}">
-                @error('tempat_lahir')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-            <div class="form-group">
-                <label for="tanggal_lahir">Tanggal Lahir</label>
-                <input type="date" name="tanggal_lahir" id="tanggal_lahir" class="form-control @error('tanggal_lahir') is-invalid @enderror" value="{{ old('tanggal_lahir', $dataPasien->tanggal_lahir) }}">
-                @error('tanggal_lahir')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-            <div class="form-group">
-                <label for="jenis_kelamin">Jenis Kelamin</label>
-                <select name="jenis_kelamin" id="jenis_kelamin" class="form-control @error('jenis_kelamin') is-invalid @enderror">
-                    <option value="laki-laki" {{ (old('jenis_kelamin', $dataPasien->jenis_kelamin) == 'laki-laki' ? 'selected' : '') }}>Laki-laki</option>
-                    <option value="perempuan" {{ (old('jenis_kelamin', $dataPasien->jenis_kelamin) == 'perempuan' ? 'selected' : '') }}>Perempuan</option>
-                </select>
-                @error('jenis_kelamin')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-            <div class="form-group">
-                <label for="alamat">Alamat</label>
-                <input type="text" name="alamat" id="alamat" class="form-control @error('alamat') is-invalid @enderror" value="{{ old('alamat', $dataPasien->alamat) }}">
-                @error('alamat')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-            <div class="form-group">
-                <label for="no_kberobat">No. Kartu Berobat</label>
-                <input type="text" name="no_kberobat" id="no_kberobat" class="form-control @error('no_kberobat') is-invalid @enderror" value="{{ old('no_kberobat', $dataPasien->no_kberobat) }}">
-                @error('no_kberobat')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-            <div class="form-group">
-                <label for="no_kbpjs">No. Kartu BPJS</label>
-                <input type="text" name="no_kbpjs" id="no_kbpjs" class="form-control @error('no_kbpjs') is-invalid @enderror" value="{{ old('no_kbpjs', $dataPasien->no_kbpjs) }}">
-                @error('no_kbpjs')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+        </div>
+        
+        <!-- Insurance Data -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Data BPJS</h6>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('pasien.update-insurance', $dataPasien->id) }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <input type="hidden" name="insurance_type" value="bpjs">
+                        
+                        <div class="form-group">
+                            <label for="no_bpjs">Nomor BPJS</label>
+                            <input type="text" class="form-control" id="no_bpjs" name="no_bpjs" 
+                                   value="{{ old('no_bpjs', $dataPasien->no_bpjs ?? '') }}">
+                            @error('no_bpjs')
+                                <small class="text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="scan_bpjs">Scan Kartu BPJS</label>
+                            <input type="file" class="form-control-file" id="scan_bpjs" name="scan_bpjs">
+                            <small class="form-text text-muted">Format: JPG, PNG, PDF. Max: 2MB</small>
+                            @error('scan_bpjs')
+                                <small class="text-danger">{{ $message }}</small>
+                            @enderror
+                            
+                            @if(isset($dataPasien->scan_bpjs) && $dataPasien->scan_bpjs)
+                            <div class="mt-2">
+                                <small class="form-text text-muted">File yang sudah diunggah:</small>
+                                <a href="{{ asset('storage/'.$dataPasien->scan_bpjs) }}" target="_blank" class="btn btn-sm btn-info mt-1">
+                                    <i class="fas fa-eye fa-sm"></i> Lihat Kartu BPJS
+                                </a>
+                            </div>
+                            @endif
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-save mr-1"></i> Simpan Data BPJS
+                        </button>
+                    </form>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="scan_ktp">Scan KTP</label>
-                <input type="file" name="scan_ktp" id="scan_ktp" class="form-control @error('scan_ktp') is-invalid @enderror">
-                @error('scan_ktp')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-                @if($dataPasien->scan_ktp)
-                    <div class="mt-2">
-                        <small class="text-muted">File yang sudah diunggah: 
-                            <a href="{{ asset('storage/' . $dataPasien->scan_ktp) }}" target="_blank">Lihat KTP</a>
-                        </small>
-                    </div>
-                @endif
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Data Asuransi</h6>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('pasien.update-insurance', $dataPasien->id) }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <input type="hidden" name="insurance_type" value="asuransi">
+                        
+                        <div class="form-group">
+                            <label for="scan_asuransi">Scan Kartu Asuransi</label>
+                            <input type="file" class="form-control-file" id="scan_asuransi" name="scan_asuransi">
+                            <small class="form-text text-muted">Format: JPG, PNG, PDF. Max: 2MB</small>
+                            @error('scan_asuransi')
+                                <small class="text-danger">{{ $message }}</small>
+                            @enderror
+                            
+                            @if(isset($dataPasien->scan_asuransi) && $dataPasien->scan_asuransi)
+                            <div class="mt-2">
+                                <small class="form-text text-muted">File yang sudah diunggah:</small>
+                                <a href="{{ asset('storage/'.$dataPasien->scan_asuransi) }}" target="_blank" class="btn btn-sm btn-info mt-1">
+                                    <i class="fas fa-eye fa-sm"></i> Lihat Kartu Asuransi
+                                </a>
+                            </div>
+                            @endif
+                        </div>
+                        
+                        <button type="submit" class="btn btn-warning btn-block">
+                            <i class="fas fa-save mr-1"></i> Simpan Data Asuransi
+                        </button>
+                    </form>
+                </div>
             </div>
-            
-            <div class="form-group">
-                <label for="scan_kberobat">Scan Kartu Berobat</label>
-                <input type="file" name="scan_kberobat" id="scan_kberobat" class="form-control @error('scan_kberobat') is-invalid @enderror">
-                @error('scan_kberobat')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-                @if($dataPasien->scan_kberobat)
-                    <div class="mt-2">
-                        <small class="text-muted">File yang sudah diunggah: 
-                            <a href="{{ asset('storage/' . $dataPasien->scan_kberobat) }}" target="_blank">Lihat Kartu Berobat</a>
-                        </small>
-                    </div>
-                @endif
-            </div>
-            
-            <div class="form-group">
-                <label for="scan_kbpjs">Scan BPJS</label>
-                <input type="file" name="scan_kbpjs" id="scan_kbpjs" class="form-control @error('scan_kbpjs') is-invalid @enderror">
-                @error('scan_kbpjs')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-                @if($dataPasien->scan_kbpjs)
-                    <div class="mt-2">
-                        <small class="text-muted">File yang sudah diunggah: 
-                            <a href="{{ asset('storage/' . $dataPasien->scan_kbpjs) }}" target="_blank">Lihat BPJS</a>
-                        </small>
-                    </div>
-                @endif
-            </div>
-            
-            <div class="form-group">
-                <label for="scan_kasuransi">Scan Asuransi</label>
-                <input type="file" name="scan_kasuransi" id="scan_kasuransi" class="form-control @error('scan_kasuransi') is-invalid @enderror">
-                @error('scan_kasuransi')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-                @if($dataPasien->scan_kasuransi)
-                    <div class="mt-2">
-                        <small class="text-muted">File yang sudah diunggah: 
-                            <a href="{{ asset('storage/' . $dataPasien->scan_kasuransi) }}" target="_blank">Lihat Asuransi</a>
-                        </small>
-                    </div>
-                @endif
-            </div>
-            
-            <div class="text-center">
-                <button type="submit" class="btn btn-primary">Update</button>
-                @if (Auth::user()->roles == 'pasien')
-                <a href="{{ route('pasien.show', $dataPasien->id) }}" class="btn btn-secondary">Batal</a>
-                @endif
-                @if (Auth::user()->roles == 'admin' || Auth::user()->roles == 'petugas')
-                <a href="{{ route('pasien.index') }}" class="btn btn-secondary">Batal</a>
-                @endif
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
-@if(session('error'))
+@push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        Swal.fire({
-            icon: 'error',
-            title: 'Gagal',
-            text: "{{ session('error') }}",
+    $(document).ready(function() {
+        $('#updateForm').on('submit', function() {
+            $('#submitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...');
+        });
+        
+        $('#bpjsForm').on('submit', function() {
+            $(this).find('button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Memproses...');
+        });
+        
+        $('#asuransiForm').on('submit', function() {
+            $(this).find('button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Memproses...');
         });
     });
 </script>
-@endif
-
+@endpush
 @endsection
-
-@include('sweetalert::alert')

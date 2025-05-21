@@ -173,10 +173,10 @@
                                     <div class="card-body">
                                         <div class="row no-gutters align-items-center">
                                             <div class="col-auto mr-3">
-                                                @if($jadwal->dokter->foto)
-                                                    <img src="{{ asset('storage/'.$jadwal->dokter->foto) }}" alt="Foto Dokter" class="img-profile rounded-circle" style="width: 60px; height: 60px;">
+                                                @if(isset($jadwal->dokter->foto_dokter) && $jadwal->dokter->foto_dokter)
+                                                    <img src="{{ asset('storage/foto_dokter/' . $jadwal->dokter->foto_dokter) }}" class="img-fluid rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover;">
                                                 @else
-                                                    <img src="{{ asset('template/img/doctor.jpg') }}" alt="Foto Dokter" class="img-profile rounded-circle" style="width: 60px; height: 60px;">
+                                                    <img src="{{ asset('template/img/doctor.jpg') }}" class="img-fluid rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover;">
                                                 @endif
                                             </div>
                                             <div class="col">
@@ -249,10 +249,10 @@
                                 <div class="card-body">
                                     <div class="row no-gutters align-items-center">
                                         <div class="col-auto mr-3">
-                                            @if($jadwal->dokter->foto)
-                                                <img src="{{ asset('storage/'.$jadwal->dokter->foto) }}" alt="Foto Dokter" class="img-profile rounded-circle" style="width: 60px; height: 60px;">
+                                            @if(isset($jadwal->dokter->foto_dokter) && $jadwal->dokter->foto_dokter)
+                                                <img src="{{ asset('storage/foto_dokter/' . $jadwal->dokter->foto_dokter) }}" class="img-fluid rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover;">
                                             @else
-                                                <img src="{{ asset('template/img/doctor.jpg') }}" alt="Foto Dokter" class="img-profile rounded-circle" style="width: 60px; height: 60px;">
+                                                <img src="{{ asset('template/img/doctor.jpg') }}" class="img-fluid rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover;">
                                             @endif
                                         </div>
                                         <div class="col">
@@ -321,10 +321,10 @@
                                 <div class="card-body">
                                     <div class="row no-gutters align-items-center">
                                         <div class="col-auto mr-3">
-                                            @if($jadwal->dokter->foto)
-                                                <img src="{{ asset('storage/'.$jadwal->dokter->foto) }}" alt="Foto Dokter" class="img-profile rounded-circle" style="width: 60px; height: 60px;">
+                                            @if(isset($jadwal->dokter->foto_dokter) && $jadwal->dokter->foto_dokter)
+                                                <img src="{{ asset('storage/foto_dokter/' . $jadwal->dokter->foto_dokter) }}" class="img-fluid rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover;">
                                             @else
-                                                <img src="{{ asset('template/img/doctor.jpg') }}" alt="Foto Dokter" class="img-profile rounded-circle" style="width: 60px; height: 60px;">
+                                                <img src="{{ asset('template/img/doctor.jpg') }}" class="img-fluid rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover;">
                                             @endif
                                         </div>
                                         <div class="col">

@@ -30,10 +30,10 @@
                 </div>
                 <div class="card-body">
                     <div class="text-center mb-4">
-                        @if(isset($jadwal->dokter->foto) && $jadwal->dokter->foto)
-                            <img src="{{ asset('storage/' . $jadwal->dokter->foto) }}" class="img-fluid rounded-circle mb-3" style="max-width: 150px;">
+                        @if(isset($jadwal->dokter->foto_dokter) && $jadwal->dokter->foto_dokter)
+                            <img src="{{ asset('storage/foto_dokter/' . $jadwal->dokter->foto_dokter) }}" class="img-fluid rounded-circle mb-3" style="max-width: 150px; height: 150px; object-fit: cover;">
                         @else
-                            <img src="{{ asset('template/img/doctor.jpg') }}" class="img-fluid rounded-circle mb-3" style="max-width: 150px;">
+                            <img src="{{ asset('template/img/doctor.jpg') }}" class="img-fluid rounded-circle mb-3" style="max-width: 150px; height: 150px; object-fit: cover;">
                         @endif
                         <h5 class="font-weight-bold text-primary">Dr. {{ $jadwal->dokter->nama_dokter }}</h5>
                         <p class="text-muted">{{ $jadwal->dokter->poliklinik->nama_poliklinik }}</p>
